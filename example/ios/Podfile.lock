@@ -1,0 +1,30 @@
+PODS:
+  - Flutter (1.0.0)
+  - flutter_checkout_payment (0.0.1):
+    - Flutter
+    - Frames (~> 3.0)
+  - Frames (3.0.2)
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - flutter_checkout_payment (from `.symlinks/plugins/flutter_checkout_payment/ios`)
+  - Frames (~> 3.0)
+
+SPEC REPOS:
+  trunk:
+    - Frames
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  flutter_checkout_payment:
+    :path: ".symlinks/plugins/flutter_checkout_payment/ios"
+
+SPEC CHECKSUMS:
+  Flutter: 0e3d915762c693b495b44d77113d4970485de6ec
+  flutter_checkout_payment: 007b90bcb26ab3dbd0d069c2674687d7d884e33b
+  Frames: 9089cf6367b3d9f30d38fa70e08cf70cefb3cfb3
+
+PODFILE CHECKSUM: 81fe5558557541d59939b9da268608ee6e1850bb
+
+COCOAPODS: 1.8.4
