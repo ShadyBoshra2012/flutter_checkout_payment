@@ -1,6 +1,6 @@
 name: flutter_checkout_payment
-description: This Flutter plugin is for Checkout.com online payment.
-version: 0.1.0
+description: This plugin is for Checkout online payment. It's implemented the native SDKs to work on Flutter environment.
+version: 0.1.0+2
 homepage: https://github.com/ShadyBoshra2012/flutter_checkout_payment
 
 environment:
