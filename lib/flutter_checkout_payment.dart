@@ -27,11 +27,15 @@ class FlutterCheckoutPayment {
   /// Initialize Checkout.com payment SDK.
   /// [key] public sdk key.
   /// [environment] the environment of initialization { SANDBOX, LIVE }, default SANDBOX.
-  static Future<bool> init({@required String key, Environment environment = Environment.SANDBOX}) async {
+  static Future<bool> init(
+      {@required String key,
+      Environment environment = Environment.SANDBOX}) async {
     try {
-      return await _channel.invokeMethod(METHOD_INIT, <String, String>{'key': key, 'environment': environment.toString()});
+      return await _channel.invokeMethod(METHOD_INIT,
+          <String, String>{'key': key, 'environment': environment.toString()});
     } on PlatformException catch (e) {
-      if (e.code == INIT_ERROR) throw "Error Occured: Code: $INIT_ERROR. Message: ${e.message}. Details: SDK Initializtion Error";
+      if (e.code == INIT_ERROR)
+        throw "Error Occured: Code: $INIT_ERROR. Message: ${e.message}. Details: SDK Initializtion Error";
       throw "Error Occured: Code: ${e.code}. Message: ${e.message}. Details: ${e.details}";
     }
   }
@@ -45,20 +49,27 @@ class FlutterCheckoutPayment {
   /// [billingModel] The billing model of the card.
   static Future<String> generateToken(
       {@required String number,
-        @required String name,
-        @required String expiryMonth,
-        @required String expiryYear,
-        @required String cvv,
-        BillingModel billingModel}) async {
+      @required String name,
+      @required String expiryMonth,
+      @required String expiryYear,
+      @required String cvv,
+      BillingModel billingModel}) async {
     try {
       if (billingModel == null) {
         // Send args without billing model
-        final String token = await _channel.invokeMethod(METHOD_GENERATE_TOKEN,
-            <String, String>{'number': number, 'name': name, 'expiryMonth': expiryMonth, 'expiryYear': expiryYear, 'cvv': cvv});
+        final String token =
+            await _channel.invokeMethod(METHOD_GENERATE_TOKEN, <String, String>{
+          'number': number,
+          'name': name,
+          'expiryMonth': expiryMonth,
+          'expiryYear': expiryYear,
+          'cvv': cvv
+        });
         return token;
       } else {
         // Send args with billing model
-        final String token = await _channel.invokeMethod(METHOD_GENERATE_TOKEN, <String, Object>{
+        final String token =
+            await _channel.invokeMethod(METHOD_GENERATE_TOKEN, <String, Object>{
           'number': number,
           'name': name,
           'expiryMonth': expiryMonth,
@@ -79,7 +90,8 @@ class FlutterCheckoutPayment {
   /// [number] The card number.
   static Future<bool> isCardValid({@required String number}) async {
     try {
-      return await _channel.invokeMethod(METHOD_IS_CARD_VALID, <String, String>{'number': number});
+      return await _channel.invokeMethod(
+          METHOD_IS_CARD_VALID, <String, String>{'number': number});
     } on PlatformException catch (e) {
       if (e.code == IS_CARD_VALID_ERROR)
         throw "Error Occured: Code: $IS_CARD_VALID_ERROR. Message: ${e.message}. Details: Validation Card Number Error";

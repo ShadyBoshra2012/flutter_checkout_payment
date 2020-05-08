@@ -7,6 +7,9 @@ class PhoneModel {
   PhoneModel({@required this.countryCode, @required this.number});
 
   Map<String, dynamic> toMap() {
-    return <String, dynamic>{"countryCode": this.countryCode, "number": this.number};
+    return <String, dynamic>{
+      "countryCode": this.countryCode,
+      "number": this.number
+    };
   }
 }
