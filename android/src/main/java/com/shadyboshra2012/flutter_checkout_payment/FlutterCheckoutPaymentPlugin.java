@@ -138,23 +138,19 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
                         String countryCode = phoneModelMap.get("countryCode").toString();
                         String phoneNumber = phoneModelMap.get("number").toString();
 
-                        BillingModel billingModel = new BillingModel(
-                                addressLine1,
-                                addressLine2,
-                                postcode,
-                                country,
-                                city,
-                                state,
-                                new PhoneModel(
-                                        countryCode,
-                                        phoneNumber
-                                )
-                        );
-
                         // Set cardTokenisationRequest with billing model.
                         cardTokenisationRequest =
                                 new CardTokenisationRequest(cardNumber, name, expiryMonth, expiryYear, cvv,
-                                        billingModel);
+                                        new BillingModel(
+                                                addressLine1,
+                                                addressLine2,
+                                                postcode,
+                                                country,
+                                                city,
+                                                state), new PhoneModel(
+                                        countryCode,
+                                        phoneNumber
+                                ));
                     }
 
                     // Generate the token.
@@ -198,13 +194,13 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
         @Override
         public void onTokenGenerated(CardTokenisationResponse token) {
             // your token
-            pendingResult.success(token.getId());
+            pendingResult.success(token.getToken());
         }
 
         @Override
         public void onError(CardTokenisationFail error) {
             // your error
-            pendingResult.error(error.getErrorCode(), error.getMessage(), error.getEventId());
+            pendingResult.error(error.getErrorCodes().toString(), error.getErrorType(), error.getRequestId());
         }
 
         @Override

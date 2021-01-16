@@ -19,8 +19,7 @@ dev_dependencies:
 
   flutter_checkout_payment:
     path: ../
-
-  credit_card: 0.1.6
+  credit_card: 0.1.8
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
