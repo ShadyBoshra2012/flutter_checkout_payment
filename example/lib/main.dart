@@ -49,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> initPaymentSDK() async {
     // Platform messages may fail, so we use a try/catch PlatformException.
     try {
-      bool isSuccess = await FlutterCheckoutPayment.init("${Keys.TEST_KEY}");
+      bool isSuccess = await FlutterCheckoutPayment.init(key: "${Keys.TEST_KEY}");
       //bool isSuccess =  await FlutterCheckoutPayment.init(key: "${Keys.TEST_KEY}", environment: Environment.LIVE);
       print(isSuccess);
       if (mounted) setState(() => _isInit = "true");
