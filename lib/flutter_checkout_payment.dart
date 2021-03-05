@@ -65,7 +65,6 @@ class FlutterCheckoutPayment {
         'cvv': cvv,
         'billingModel': billingModel?.toMap(),
       });
-      print(stringJSON);
       return CardTokenisationResponse.fromString(stringJSON);
     } on PlatformException catch (e) {
       if (e.code == GENERATE_TOKEN_ERROR)
