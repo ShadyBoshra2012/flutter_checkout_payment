@@ -1,23 +1,23 @@
 part of 'package:flutter_checkout_payment/flutter_checkout_payment.dart';
 
 class CardTokenisationResponse {
-  String? type;
-  String? token;
-  String? expiresOn;
-  int? expiryMonth;
-  int? expiryYear;
-  String? scheme;
-  String? last4;
-  String? bin;
-  String? cardType;
-  String? cardCategory;
-  String? issuer;
-  String? issuerCountry;
-  String? productId;
-  String? productType;
-  BillingModel? billingAddress;
-  PhoneModel? phone;
-  String? name;
+  final String? type;
+  final String? token;
+  final String? expiresOn;
+  final int? expiryMonth;
+  final int? expiryYear;
+  final String? scheme;
+  final String? last4;
+  final String? bin;
+  final String? cardType;
+  final String? cardCategory;
+  final String? issuer;
+  final String? issuerCountry;
+  final String? productId;
+  final String? productType;
+  final BillingModel? billingAddress;
+  final PhoneModel? phone;
+  final String? name;
 
   CardTokenisationResponse({
     this.type,

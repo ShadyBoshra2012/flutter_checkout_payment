@@ -2,9 +2,12 @@
 
 [![pub.dev](https://img.shields.io/pub/v/flutter_checkout_payment.svg)](https://pub.dev/packages/flutter_checkout_payment)  [![Donate Paypal](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/ShadyBoshra2012) [![GitHub Follow](https://img.shields.io/github/followers/ShadyBoshra2012.svg?style=social&label=Follow)](https://github.com/ShadyBoshra2012)
 
+
 ## Explain
 
 This plugin is for [Checkout](https://checkout.com) online payment. It's implemented the native SDKs to work on Flutter environment.
+
+![](https://logos-download.com/wp-content/uploads/2019/07/Checkout.com_Logo.png)
 
 ## Getting Started
 
@@ -12,26 +15,12 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  flutter_checkout_payment: ^0.1.0+2
+  flutter_checkout_payment: ^1.0.0
 ```
 
 ### Android
 
-You have to edit `AndroidManifest.xml` file with following.
-
-```manifest
-<manifest ...
-    xmlns:tools="http://schemas.android.com/tools" 
-    ... />
-    ...
-    <application
-        ...
-        tools:replace="android:label" 
-        ... >
-    ...
-    </appliaction>
-</manifest>
-```
+No additional work required
 
 ### iOS
 
@@ -40,6 +29,7 @@ The SDK build for >= iOS 10.0, so you need to set the platform version in the `P
 ```
 platform: :ios, '10.0'
 ```
+
 
 ## Usage
 
@@ -64,18 +54,21 @@ await FlutterCheckoutPayment.init(key: "YOUR_PUBLIC_KEY", environment: Environme
 Now, you can generate the Token which you will use to proceed the payment.
 
 ```dart
-String token = await FlutterCheckoutPayment.generateToken(number: "4242424242424242", name: "name", expiryMonth: "05", expiryYear: "21", cvv: "100");
+CardTokenisationResponse response = await FlutterCheckoutPayment.generateToken(number: "4242424242424242", name: "name", expiryMonth: "05", expiryYear: "21", cvv: "100");
+print(response.token);
 ```
+
 
 ## Public Static Methods Summary
 
 | Return                    | Description |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Future\<bool> | **init(@required String key, Environment environment** *default* **Environment.SANDBOX})** <br>Initialize the Checkout API with key and environment. Return a bool of the successful status.|
-| Future\<String> | **generateToken({@required String number, @required String name, @required String expiryMonth, @required String expiryYear, @required String cvv, BillingModel billingModel})** <br>Generate the token which it will be used to make the payment, return the String value.|
+| Future\<CardTokenisationResponse> | **generateToken({@required String number, @required String name, @required String expiryMonth, @required String expiryYear, @required String cvv, BillingModel billingModel})** <br>Generate the token which it will be used to make the payment, return the CardTokenisationResponse value.|
 | Future\<bool> | **isCardValid({@required String number})** <br>Check whether the card number is valid or not, return a bool with the result.|
 
 The rest of methods are under development.
+
 
 ## Objects
 
@@ -94,7 +87,28 @@ class PhoneModel {
   final String countryCode;
   final String number;
 }
+
+class CardTokenisationResponse {
+  final String? type;
+  final String? token;
+  final String? expiresOn;
+  final int? expiryMonth;
+  final int? expiryYear;
+  final String? scheme;
+  final String? last4;
+  final String? bin;
+  final String? cardType;
+  final String? cardCategory;
+  final String? issuer;
+  final String? issuerCountry;
+  final String? productId;
+  final String? productType;
+  final BillingModel? billingAddress;
+  final PhoneModel? phone;
+  final String? name;
+}
 ```
+
 
 ## Links
 
@@ -102,17 +116,19 @@ Checkout Android SDK: https://github.com/checkout/frames-android
 
 Checkout iOS SDK: https://github.com/checkout/frames-ios
 
-This plugin is mainly developed for [GRANDTK](http://grandtk.com/) company.
+This plugin is mainly developed for [GRANDTK](https://grandtk.com/) company.
 
-## Issues or Contributions
 
-This is a beta version of plugin, so I am very appreciated for any issues or contribution you can help me with.
+## Find me on Stackoverflow
+
+<a href="https://stackoverflow.com/users/2076880/shady-boshra"><img src="https://stackoverflow.com/users/flair/2076880.png" width="208" height="58" alt="profile for Shady Boshra at Stack Overflow, Q&amp;A for professional and enthusiast programmers" title="profile for Shady Boshra at Stack Overflow, Q&amp;A for professional and enthusiast programmers"></a>
+
 
 ## License
 
-MIT: [http://mit-license.org](http://mit-license.org). 
+MIT: [https://mit-license.org](https://mit-license.org). 
 
-Copyright (c) 2019 Shady Boshra. All rights reserved.
+Copyright (c) 2021 Shady Boshra. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -131,7 +147,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
-## Find me on Stackoverflow
-
-<a href="https://stackoverflow.com/users/2076880/shady-boshra"><img src="https://stackoverflow.com/users/flair/2076880.png" width="208" height="58" alt="profile for Shady Boshra at Stack Overflow, Q&amp;A for professional and enthusiast programmers" title="profile for Shady Boshra at Stack Overflow, Q&amp;A for professional and enthusiast programmers"></a>
