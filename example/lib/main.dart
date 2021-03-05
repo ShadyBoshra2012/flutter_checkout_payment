@@ -6,8 +6,6 @@ import 'package:credit_card/credit_card_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_checkout_payment/flutter_checkout_payment.dart';
-import 'package:flutter_checkout_payment/models/BillingModel.dart';
-import 'package:flutter_checkout_payment/models/PhoneModel.dart';
 
 import 'Keys.dart';
 
@@ -86,41 +84,32 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               Column(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: <Widget>[
                 Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: <Widget>[
-                  RaisedButton(
+                  ElevatedButton(
                     child: Padding(
                         padding: const EdgeInsets.all(12),
                         child: Text(
                           "Generate Token",
-                          style: TextStyle(fontSize: 14, color: Colors.blue),
+                          style: TextStyle(fontSize: 14),
                         )),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30.0),
-                    ),
                     onPressed: _generateToken,
                   ),
-                  RaisedButton(
+                  ElevatedButton(
                     child: Padding(
                         padding: const EdgeInsets.all(12),
                         child: Text(
                           "Card Validation",
-                          style: TextStyle(fontSize: 14, color: Colors.blue),
+                          style: TextStyle(fontSize: 14),
                         )),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30.0),
-                    ),
                     onPressed: _cardValidation,
                   )
                 ]),
-                RaisedButton(
+                ElevatedButton(
                   child: Padding(
                       padding: const EdgeInsets.all(12),
                       child: Text(
                         "Generate Token with Address",
-                        style: TextStyle(fontSize: 14, color: Colors.blue),
+                        style: TextStyle(fontSize: 14),
                       )),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30.0),
-                  ),
                   onPressed: _generateTokenWithAddress,
                 )
               ]),
@@ -144,14 +133,17 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       // Show loading dialog
       showDialog(
-          context: this.context,
-          barrierDismissible: false,
-          child: WillPopScope(
+        context: this.context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return WillPopScope(
               onWillPop: () => Future<bool>.value(false),
               child: AlertDialog(
                 title: Text("Loading..."),
                 content: Column(mainAxisSize: MainAxisSize.min, children: <Widget>[CircularProgressIndicator()]),
-              )));
+              ));
+        },
+      );
 
       String number = cardNumber.replaceAll(" ", "");
       String expiryMonth = expiryDate.substring(0, 2);
@@ -159,7 +151,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       print("$cardNumber, $cardNameHolder, $expiryMonth, $expiryYear, $cvv");
 
-      String token = await FlutterCheckoutPayment.generateToken(
+      CardTokenisationResponse response = await FlutterCheckoutPayment.generateToken(
           number: number, name: cardNameHolder, expiryMonth: expiryMonth, expiryYear: expiryYear, cvv: cvv);
 
       // Hide loading dialog
@@ -167,24 +159,30 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // Show result dialog
       showDialog(
-          context: this.context,
-          child: AlertDialog(
+        context: this.context,
+        builder: (BuildContext context) {
+          return AlertDialog(
             title: Text("Token"),
-            content: Text("$token"),
-            actions: <Widget>[FlatButton(child: Text("Close"), onPressed: () => Navigator.pop(context))],
-          ));
+            content: Text("${response.token}"),
+            actions: <Widget>[TextButton(child: Text("Close"), onPressed: () => Navigator.pop(context))],
+          );
+        },
+      );
     } catch (ex) {
       // Hide loading dialog
       Navigator.pop(context);
 
       // Show error dialog
       showDialog(
-          context: this.context,
-          child: AlertDialog(
+        context: this.context,
+        builder: (BuildContext context) {
+          return AlertDialog(
             title: Text("Error"),
             content: Text("${ex.toString()}"),
-            actions: <Widget>[FlatButton(child: Text("Close"), onPressed: () => Navigator.pop(context))],
-          ));
+            actions: <Widget>[TextButton(child: Text("Close"), onPressed: () => Navigator.pop(context))],
+          );
+        },
+      );
     }
   }
 
@@ -192,14 +190,17 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       // Show loading dialog
       showDialog(
-          context: this.context,
-          barrierDismissible: false,
-          child: WillPopScope(
+        context: this.context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return WillPopScope(
               onWillPop: () => Future<bool>.value(false),
               child: AlertDialog(
                 title: Text("Loading..."),
                 content: Column(mainAxisSize: MainAxisSize.min, children: <Widget>[CircularProgressIndicator()]),
-              )));
+              ));
+        },
+      );
 
       String number = cardNumber.replaceAll(" ", "");
       String expiryMonth = expiryDate.substring(0, 2);
@@ -207,7 +208,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       print("$cardNumber, $cardNameHolder, $expiryMonth, $expiryYear, $cvv");
 
-      String token = await FlutterCheckoutPayment.generateToken(
+      CardTokenisationResponse response = await FlutterCheckoutPayment.generateToken(
           number: number,
           name: cardNameHolder,
           expiryMonth: expiryMonth,
@@ -227,24 +228,30 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // Show result dialog
       showDialog(
-          context: this.context,
-          child: AlertDialog(
+        context: this.context,
+        builder: (BuildContext context) {
+          return AlertDialog(
             title: Text("Token"),
-            content: Text("$token"),
-            actions: <Widget>[FlatButton(child: Text("Close"), onPressed: () => Navigator.pop(context))],
-          ));
+            content: Text("${response.token}"),
+            actions: <Widget>[TextButton(child: Text("Close"), onPressed: () => Navigator.pop(context))],
+          );
+        },
+      );
     } catch (ex) {
       // Hide loading dialog
       Navigator.pop(context);
 
       // Show error dialog
       showDialog(
-          context: this.context,
-          child: AlertDialog(
+        context: this.context,
+        builder: (BuildContext context) {
+          return AlertDialog(
             title: Text("Error"),
             content: Text("${ex.toString()}"),
-            actions: <Widget>[FlatButton(child: Text("Close"), onPressed: () => Navigator.pop(context))],
-          ));
+            actions: <Widget>[TextButton(child: Text("Close"), onPressed: () => Navigator.pop(context))],
+          );
+        },
+      );
     }
   }
 
@@ -252,14 +259,17 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       // Show loading dialog
       showDialog(
-          context: this.context,
-          barrierDismissible: false,
-          child: WillPopScope(
+        context: this.context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return WillPopScope(
               onWillPop: () => Future<bool>.value(false),
               child: AlertDialog(
                 title: Text("Loading..."),
                 content: Column(mainAxisSize: MainAxisSize.min, children: <Widget>[CircularProgressIndicator()]),
-              )));
+              ));
+        },
+      );
 
       String number = cardNumber.replaceAll(" ", "");
 
@@ -272,24 +282,30 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // Show result dialog
       showDialog(
-          context: this.context,
-          child: AlertDialog(
+        context: this.context,
+        builder: (BuildContext context) {
+          return AlertDialog(
             title: Text("Validation? "),
             content: Text("$isValid"),
-            actions: <Widget>[FlatButton(child: Text("Close"), onPressed: () => Navigator.pop(context))],
-          ));
+            actions: <Widget>[TextButton(child: Text("Close"), onPressed: () => Navigator.pop(context))],
+          );
+        },
+      );
     } catch (ex) {
       // Hide loading dialog
       Navigator.pop(context);
 
       // Show error dialog
       showDialog(
-          context: this.context,
-          child: AlertDialog(
+        context: this.context,
+        builder: (BuildContext context) {
+          return AlertDialog(
             title: Text("Error"),
             content: Text("${ex.toString()}"),
-            actions: <Widget>[FlatButton(child: Text("Close"), onPressed: () => Navigator.pop(context))],
-          ));
+            actions: <Widget>[TextButton(child: Text("Close"), onPressed: () => Navigator.pop(context))],
+          );
+        },
+      );
     }
   }
 }

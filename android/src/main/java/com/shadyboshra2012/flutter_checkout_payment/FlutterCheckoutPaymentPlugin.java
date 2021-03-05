@@ -2,7 +2,6 @@ package com.shadyboshra2012.flutter_checkout_payment;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -10,12 +9,12 @@ import com.android.volley.VolleyError;
 import com.checkout.android_sdk.CheckoutAPIClient;
 import com.checkout.android_sdk.Models.BillingModel;
 import com.checkout.android_sdk.Models.PhoneModel;
-import com.checkout.android_sdk.PaymentForm;
 import com.checkout.android_sdk.Request.CardTokenisationRequest;
 import com.checkout.android_sdk.Response.CardTokenisationFail;
 import com.checkout.android_sdk.Response.CardTokenisationResponse;
 import com.checkout.android_sdk.Utils.CardUtils;
 import com.checkout.android_sdk.Utils.Environment;
+import com.google.gson.Gson;
 
 import java.util.HashMap;
 
@@ -144,17 +143,18 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
                                 postcode,
                                 country,
                                 city,
-                                state,
-                                new PhoneModel(
-                                        countryCode,
-                                        phoneNumber
-                                )
+                                state
+                        );
+
+                        PhoneModel phoneModel = new PhoneModel(
+                                countryCode,
+                                phoneNumber
                         );
 
                         // Set cardTokenisationRequest with billing model.
                         cardTokenisationRequest =
                                 new CardTokenisationRequest(cardNumber, name, expiryMonth, expiryYear, cvv,
-                                        billingModel);
+                                        billingModel, phoneModel);
                     }
 
                     // Generate the token.
@@ -197,14 +197,14 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
     private CheckoutAPIClient.OnTokenGenerated mTokenListener = new CheckoutAPIClient.OnTokenGenerated() {
         @Override
         public void onTokenGenerated(CardTokenisationResponse token) {
-            // your token
-            pendingResult.success(token.getId());
+            // Using Gson to convert the custom request object into a JSON string for use in the resonse.
+            Gson gson = new Gson();
+            pendingResult.success(gson.toJson(token));
         }
 
         @Override
         public void onError(CardTokenisationFail error) {
-            // your error
-            pendingResult.error(error.getErrorCode(), error.getMessage(), error.getEventId());
+            pendingResult.error(error.getErrorCodes()[0], error.getErrorType(), error.getRequestId());
         }
 
         @Override
