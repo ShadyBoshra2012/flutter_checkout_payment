@@ -15,7 +15,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  flutter_checkout_payment: ^1.0.0
+  flutter_checkout_payment: ^1.1.0
 ```
 
 ### Android
@@ -66,6 +66,8 @@ print(response.token);
 | Future\<bool> | **init(@required String key, Environment environment** *default* **Environment.SANDBOX})** <br>Initialize the Checkout API with key and environment. Return a bool of the successful status.|
 | Future\<CardTokenisationResponse> | **generateToken({@required String number, @required String name, @required String expiryMonth, @required String expiryYear, @required String cvv, BillingModel billingModel})** <br>Generate the token which it will be used to make the payment, return the CardTokenisationResponse value.|
 | Future\<bool> | **isCardValid({@required String number})** <br>Check whether the card number is valid or not, return a bool with the result.|
+| Future<String> | **handleThreeDSChallenge({@required String authUrl, @required String sucessUrl, @required String failUrl})**<br>Handle a 3DS challenge, returns token 
+if sucess or null if failure. |
 
 The rest of methods are under development.
 
