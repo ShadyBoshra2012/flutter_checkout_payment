@@ -11,7 +11,7 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^0.1.2
+  cupertino_icons: ^1.0.5
 
 dev_dependencies:
   flutter_test:
@@ -20,7 +20,7 @@ dev_dependencies:
   flutter_checkout_payment:
     path: ../
 
-  credit_card: 0.1.6
+  flutter_credit_card: ^3.0.3
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

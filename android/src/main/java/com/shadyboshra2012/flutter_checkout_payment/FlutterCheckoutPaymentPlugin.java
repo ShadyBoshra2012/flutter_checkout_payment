@@ -43,12 +43,13 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
     private static final String METHOD_INIT = "init";
     private static final String METHOD_GENERATE_TOKEN = "generateToken";
     private static final String METHOD_IS_CARD_VALID = "isCardValid";
-    private static final String METHOD_HANDLE_THREE_DS_CHALLENGE = "handleThreeDSChallenge";
+    private static final String METHOD_HANDLE_3DS = "handle3DS";
 
     /// Error codes returned to Flutter if there's an error.
     private static final String INIT_ERROR = "1";
     private static final String GENERATE_TOKEN_ERROR = "2";
     private static final String IS_CARD_VALID_ERROR = "3";
+    private static final String METHOD_HANDLE_3DS_ERROR = "4";
 
     /// The MethodChannel that will the communication between Flutter and native Android
     ///
@@ -210,7 +211,7 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
                     result.error(IS_CARD_VALID_ERROR, ex.getMessage(), ex.getLocalizedMessage());
                 }
                 break;
-            case METHOD_HANDLE_THREE_DS_CHALLENGE:
+            case METHOD_HANDLE_3DS:
                 pendingResult = result;
 
                 // Get the args from Flutter.
@@ -228,7 +229,7 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
                             }
                             @Override
                             public void onError(String errorMessage) {
-                                pendingResult.success(null);
+                                pendingResult.error(METHOD_HANDLE_3DS_ERROR, errorMessage, "");
                                 pendingResult = null;
                                 dismissCheckoutView();
                             }

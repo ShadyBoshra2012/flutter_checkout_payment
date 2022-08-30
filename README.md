@@ -66,8 +66,7 @@ print(response.token);
 | Future\<bool> | **init(@required String key, Environment environment** *default* **Environment.SANDBOX})** <br>Initialize the Checkout API with key and environment. Return a bool of the successful status.|
 | Future\<CardTokenisationResponse> | **generateToken({@required String number, @required String name, @required String expiryMonth, @required String expiryYear, @required String cvv, BillingModel billingModel})** <br>Generate the token which it will be used to make the payment, return the CardTokenisationResponse value.|
 | Future\<bool> | **isCardValid({@required String number})** <br>Check whether the card number is valid or not, return a bool with the result.|
-| Future<String> | **handleThreeDSChallenge({@required String authUrl, @required String sucessUrl, @required String failUrl})**<br>Handle a 3DS challenge, returns token 
-if sucess or null if failure. |
+| Future\<String> | **handle3DS({@required String authUrl, @required String successUrl, @required String failUrl})** <br>Handle a 3DS challenge, returns token if success or null if failure. |
 
 The rest of methods are under development.
 
@@ -110,6 +109,11 @@ class CardTokenisationResponse {
   final String? name;
 }
 ```
+
+
+## Contributors (Thanks for your GREAT work ❤️)
+
+[edwardmp](https://github.com/edwardmp): Added Feature Handling 3D Secure.
 
 
 ## Links
