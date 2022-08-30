@@ -11,7 +11,7 @@ public class SwiftFlutterCheckoutPaymentPlugin: NSObject, FlutterPlugin {
     private var METHOD_INIT : String = "init"
     private var METHOD_GENERATE_TOKEN : String = "generateToken"
     private var METHOD_IS_CARD_VALID : String = "isCardValid"
-    private var HANDLE_THREE_DS_CHALLENGE : String = "handleThreeDSChallenge"
+    private var HANDLE_3DS : String = "handle3DS"
 
     /// Error codes returned to Flutter if there's an error.
     private var GENERATE_TOKEN_ERROR : String = "2"
@@ -131,17 +131,17 @@ public class SwiftFlutterCheckoutPaymentPlugin: NSObject, FlutterPlugin {
             // Return the boolean result.
             result(isCardValid)
         }
-        else if call.method == HANDLE_THREE_DS_CHALLENGE {
+        else if call.method == HANDLE_3DS {
             currentFlutterResult = result
 
             let args = call.arguments as? [String: Any]
 
-            let sucessUrl : String = args!["successUrl"] as! String
+            let successUrl : String = args!["successUrl"] as! String
             let failUrl : String = args!["failUrl"] as! String
             let authUrl : String = args!["authUrl"] as! String
 
             let threeDSWebViewController = ThreedsWebViewController.init(
-                successUrl: URL(string: sucessUrl)!,
+                successUrl: URL(string: successUrl)!,
                 failUrl: URL(string: failUrl)!)
             threeDSWebViewController.authUrl = URL(string: authUrl)
             threeDSWebViewController.delegate = self
