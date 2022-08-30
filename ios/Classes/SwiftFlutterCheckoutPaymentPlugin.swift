@@ -11,13 +11,15 @@ public class SwiftFlutterCheckoutPaymentPlugin: NSObject, FlutterPlugin {
     private var METHOD_INIT : String = "init"
     private var METHOD_GENERATE_TOKEN : String = "generateToken"
     private var METHOD_IS_CARD_VALID : String = "isCardValid"
+    private var HANDLE_THREE_DS_CHALLENGE : String = "handleThreeDSChallenge"
 
     /// Error codes returned to Flutter if there's an error.
-    private var INIT_ERROR : String = "1"
     private var GENERATE_TOKEN_ERROR : String = "2"
 
     /// Checkout API iOS Platform
     private var checkoutAPIClient : CheckoutAPIClient! = nil
+
+    private var currentFlutterResult: FlutterResult? = nil
 
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: CHANNEL_NAME, binaryMessenger: registrar.messenger())
@@ -43,7 +45,6 @@ public class SwiftFlutterCheckoutPaymentPlugin: NSObject, FlutterPlugin {
             result(true)
         }
         else if call.method == METHOD_GENERATE_TOKEN {
-
             // Get the args from Flutter.
             let args = call.arguments as? [String: Any]
 
@@ -98,7 +99,7 @@ public class SwiftFlutterCheckoutPaymentPlugin: NSObject, FlutterPlugin {
             let cardTokenRequest = CkoCardTokenRequest(number: cardNumber, expiryMonth: expiryMonth, expiryYear: expiryYear, cvv: cvv, name: name, billingAddress: billingModel, phone: phoneModel)
 
             // create the card token request
-            checkoutAPIClient.createCardToken(card: cardTokenRequest, completion: { results in
+            checkoutAPIClient.createCardToken(card: cardTokenRequest, completion: { [self] results in
                 do {
                     switch results {
                     case .success:
@@ -108,10 +109,10 @@ public class SwiftFlutterCheckoutPaymentPlugin: NSObject, FlutterPlugin {
                         let json = String(data: jsonData, encoding: String.Encoding.utf8)
                         result(json)
                     case .failure(let ex):
-                        result(FlutterError(code: "1", message: ex.localizedDescription, details: nil))
+                        result(FlutterError(code: self.GENERATE_TOKEN_ERROR, message: ex.localizedDescription, details: nil))
                     }
                 } catch {
-                   result(FlutterError(code: "0", message: error.localizedDescription, details: nil))
+                    result(FlutterError(code: self.GENERATE_TOKEN_ERROR, message: error.localizedDescription, details: nil))
                 }
             })
 //            result(FlutterError(code: error.requestId, message: error.errorType, details: nil))
@@ -130,8 +131,58 @@ public class SwiftFlutterCheckoutPaymentPlugin: NSObject, FlutterPlugin {
             // Return the boolean result.
             result(isCardValid)
         }
+        else if call.method == HANDLE_THREE_DS_CHALLENGE {
+            currentFlutterResult = result
+
+            let args = call.arguments as? [String: Any]
+
+            let sucessUrl : String = args!["successUrl"] as! String
+            let failUrl : String = args!["failUrl"] as! String
+            let authUrl : String = args!["authUrl"] as! String
+
+            let threeDSWebViewController = ThreedsWebViewController.init(
+                successUrl: URL(string: sucessUrl)!,
+                failUrl: URL(string: failUrl)!)
+            threeDSWebViewController.authUrl = URL(string: authUrl)
+            threeDSWebViewController.delegate = self
+
+            let rootViewController: UIViewController! = UIApplication.shared.keyWindow?.rootViewController
+
+            if (rootViewController is UINavigationController) {
+                (rootViewController as! UINavigationController).pushViewController(threeDSWebViewController, animated:true)
+            } else {
+                let navigationController: UINavigationController! = UINavigationController(rootViewController:threeDSWebViewController)
+                rootViewController.present(navigationController, animated:true, completion:nil)
+            }
+        }
         else {
             result(FlutterMethodNotImplemented)
         }
     }
+}
+
+extension SwiftFlutterCheckoutPaymentPlugin: ThreedsWebViewControllerDelegate {
+
+    public func threeDSWebViewControllerAuthenticationDidSucceed(_ threeDSWebViewController: ThreedsWebViewController, token: String?) {
+        // Handle successful 3DS.
+        let rootViewController: UIViewController! = UIApplication.shared.keyWindow?.rootViewController
+        rootViewController.dismiss(animated: true)
+
+        if let result = currentFlutterResult {
+            result(token)
+            currentFlutterResult = nil
+        }
+    }
+
+    public func threeDSWebViewControllerAuthenticationDidFail(_ threeDSWebViewController: ThreedsWebViewController) {
+        // Handle failed 3DS.
+        let rootViewController: UIViewController! = UIApplication.shared.keyWindow?.rootViewController
+        rootViewController.dismiss(animated: true)
+
+        if let result = currentFlutterResult {
+            result(nil)
+            currentFlutterResult = nil
+        }
+    }
+
 }

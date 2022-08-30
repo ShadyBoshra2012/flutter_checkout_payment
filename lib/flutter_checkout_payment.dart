@@ -17,6 +17,7 @@ class FlutterCheckoutPayment {
   static const String METHOD_INIT = "init";
   static const String METHOD_GENERATE_TOKEN = "generateToken";
   static const String METHOD_IS_CARD_VALID = "isCardValid";
+  static const String METHOD_HANDLE_THREE_DS_CHALLENGE = "handleThreeDSChallenge";
 
   /// Error codes returned to Flutter if there's an error.
   static const String INIT_ERROR = "1";
@@ -85,4 +86,26 @@ class FlutterCheckoutPayment {
       throw "Error Occurred: Code: ${e.code}. Message: ${e.message}. Details: ${e.details}";
     }
   }
+
+  /// Open a webview to allow the user to pass a 3DS challenge.
+  /// sucess and failUrl should match what you have configured elsewhere!
+  ///
+  /// [authUrl] the 3DS challenge URL received from Checkout.
+  /// [sucessUrl] If the issuer redirects to this url, we will return the token.
+  /// [failUrl] If the issuer redirects to this url, we will return null.
+  static Future<String?> handleThreeDSChallenge(
+      {required String authUrl, required String sucessUrl, required String failUrl}) async {
+    try {
+      return await _channel.invokeMethod(
+          METHOD_HANDLE_THREE_DS_CHALLENGE, <String, String>{
+        'successUrl': sucessUrl,
+        'failUrl': failUrl,
+        'authUrl': authUrl
+      });
+    } on PlatformException catch (e) {
+      throw "Error Occurred: Code: ${e.code}. Message: ${e
+          .message}. Details: ${e.details}";
+    }
+  }
+  
 }

@@ -1,3 +1,7 @@
+## 1.1.0
+Add `handleThreeDSChallenge` method.
+Upgraded Android to frames: 3.1.2
+
 ## 1.0.0
 
 Upgraded to 1.0.0.
