@@ -1,34 +1,41 @@
 package com.shadyboshra2012.flutter_checkout_payment;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Context;
 
+import android.view.View;
+import android.widget.FrameLayout;
 import androidx.annotation.NonNull;
 
-import com.android.volley.VolleyError;
 import com.checkout.android_sdk.CheckoutAPIClient;
 import com.checkout.android_sdk.Models.BillingModel;
 import com.checkout.android_sdk.Models.PhoneModel;
+import com.checkout.android_sdk.PaymentForm;
 import com.checkout.android_sdk.Request.CardTokenisationRequest;
 import com.checkout.android_sdk.Response.CardTokenisationFail;
 import com.checkout.android_sdk.Response.CardTokenisationResponse;
 import com.checkout.android_sdk.Utils.CardUtils;
 import com.checkout.android_sdk.Utils.Environment;
+import com.checkout.android_sdk.network.NetworkError;
 import com.google.gson.Gson;
 
 import java.util.HashMap;
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
+import io.flutter.embedding.engine.plugins.activity.ActivityAware;
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * FlutterCheckoutPaymentPlugin
  */
-public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHandler {
+public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHandler, ActivityAware {
     /// The channel name which it's the bridge between Dart and JAVA
     private static final String CHANNEL_NAME = "shadyboshra2012/fluttercheckoutpayment";
 
@@ -36,11 +43,13 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
     private static final String METHOD_INIT = "init";
     private static final String METHOD_GENERATE_TOKEN = "generateToken";
     private static final String METHOD_IS_CARD_VALID = "isCardValid";
+    private static final String METHOD_HANDLE_3DS = "handle3DS";
 
     /// Error codes returned to Flutter if there's an error.
     private static final String INIT_ERROR = "1";
     private static final String GENERATE_TOKEN_ERROR = "2";
     private static final String IS_CARD_VALID_ERROR = "3";
+    private static final String METHOD_HANDLE_3DS_ERROR = "4";
 
     /// The MethodChannel that will the communication between Flutter and native Android
     ///
@@ -55,11 +64,33 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
     /// Variable to hold the result object when it need to coded inside callbacks.
     private Result pendingResult;
 
+    private Activity activity;
+
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
         channel = new MethodChannel(flutterPluginBinding.getFlutterEngine().getDartExecutor(), CHANNEL_NAME);
         channel.setMethodCallHandler(this);
         context = flutterPluginBinding.getApplicationContext();
+    }
+
+    @Override
+    public void onAttachedToActivity(@NonNull @NotNull ActivityPluginBinding binding) {
+        activity = binding.getActivity();
+    }
+
+    @Override
+    public void onDetachedFromActivityForConfigChanges() {
+        activity = null;
+    }
+
+    @Override
+    public void onReattachedToActivityForConfigChanges(@NonNull @NotNull ActivityPluginBinding binding) {
+        activity = binding.getActivity();
+    }
+
+    @Override
+    public void onDetachedFromActivity() {
+        activity = null;
     }
 
     // This static function is optional and equivalent to onAttachedToEngine. It supports the old
@@ -180,6 +211,45 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
                     result.error(IS_CARD_VALID_ERROR, ex.getMessage(), ex.getLocalizedMessage());
                 }
                 break;
+            case METHOD_HANDLE_3DS:
+                pendingResult = result;
+
+                // Get the args from Flutter.
+                String authUrl = call.argument("authUrl");
+                String failUrl = call.argument("failUrl");
+                String successUrl = call.argument("successUrl");
+
+                PaymentForm.On3DSFinished m3DSecureListener =
+                        new PaymentForm.On3DSFinished() {
+                            @Override
+                            public void onSuccess(String token) {
+                                pendingResult.success(token);
+                                pendingResult = null;
+                                dismissCheckoutView();
+                            }
+                            @Override
+                            public void onError(String errorMessage) {
+                                pendingResult.error(METHOD_HANDLE_3DS_ERROR, errorMessage, "");
+                                pendingResult = null;
+                                dismissCheckoutView();
+                            }
+                            private void dismissCheckoutView() {
+                                FrameLayout rootLayout = activity.findViewById(android.R.id.content);
+                                rootLayout.removeViewAt(rootLayout.getChildCount() - 1);
+                            }
+                        };
+
+                FrameLayout rootLayout = activity.findViewById(android.R.id.content);
+                final View checkoutView = View.inflate(context, R.layout.flutter_checkout_layout, rootLayout);
+
+                PaymentForm paymentForm = checkoutView.findViewById(R.id.checkout_card_form);
+                paymentForm.set3DSListener(m3DSecureListener); // pass the callback
+                paymentForm.handle3DS(
+                        authUrl, // the 3D Secure URL
+                        successUrl, // the Redirection URL
+                        failUrl // the Redirection Fail URL
+                );
+                break;
             default:
                 result.notImplemented();
                 break;
@@ -208,9 +278,9 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
         }
 
         @Override
-        public void onNetworkError(VolleyError error) {
+        public void onNetworkError(NetworkError error) {
             // your network error
-            pendingResult.error(error.networkResponse.statusCode + "", error.getMessage(),
+            pendingResult.error(error.getNetworkResponse().statusCode + "", error.getMessage(),
                     error.getNetworkTimeMs());
         }
     };
