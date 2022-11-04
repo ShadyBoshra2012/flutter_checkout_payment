@@ -70,10 +70,10 @@ public class SwiftFlutterCheckoutPaymentPlugin: NSObject, FlutterPlugin {
                             let json = String(data: jsonData, encoding: String.Encoding.utf8)
                             result(json)
                         case .failure(let ex):
-                            result(FlutterError(code: "1", message: ex.localizedDescription, details: nil))
+                            result(FlutterError(code: self.GENERATE_TOKEN_ERROR, message: ex.localizedDescription, details: nil))
                         }
                     } catch {
-                       result(FlutterError(code: "0", message: error.localizedDescription, details: nil))
+                        result(FlutterError(code: self.GENERATE_TOKEN_ERROR, message: error.localizedDescription, details: nil))
                     }
                 })
                 return

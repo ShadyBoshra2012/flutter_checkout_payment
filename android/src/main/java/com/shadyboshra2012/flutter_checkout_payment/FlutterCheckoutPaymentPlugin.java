@@ -49,7 +49,7 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
     private static final String INIT_ERROR = "1";
     private static final String GENERATE_TOKEN_ERROR = "2";
     private static final String IS_CARD_VALID_ERROR = "3";
-    private static final String METHOD_HANDLE_3DS_ERROR = "4";
+    private static final String HANDLE_3DS_ERROR = "4";
 
     /// The MethodChannel that will the communication between Flutter and native Android
     ///
@@ -212,43 +212,49 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
                 }
                 break;
             case METHOD_HANDLE_3DS:
-                pendingResult = result;
+                try {
+                    pendingResult = result;
 
-                // Get the args from Flutter.
-                String authUrl = call.argument("authUrl");
-                String failUrl = call.argument("failUrl");
-                String successUrl = call.argument("successUrl");
+                    // Get the args from Flutter.
+                    String authUrl = call.argument("authUrl");
+                    String failUrl = call.argument("failUrl");
+                    String successUrl = call.argument("successUrl");
 
-                PaymentForm.On3DSFinished m3DSecureListener =
-                        new PaymentForm.On3DSFinished() {
-                            @Override
-                            public void onSuccess(String token) {
-                                pendingResult.success(token);
-                                pendingResult = null;
-                                dismissCheckoutView();
-                            }
-                            @Override
-                            public void onError(String errorMessage) {
-                                pendingResult.error(METHOD_HANDLE_3DS_ERROR, errorMessage, "");
-                                pendingResult = null;
-                                dismissCheckoutView();
-                            }
-                            private void dismissCheckoutView() {
-                                FrameLayout rootLayout = activity.findViewById(android.R.id.content);
-                                rootLayout.removeViewAt(rootLayout.getChildCount() - 1);
-                            }
-                        };
+                    PaymentForm.On3DSFinished m3DSecureListener =
+                            new PaymentForm.On3DSFinished() {
+                                @Override
+                                public void onSuccess(String token) {
+                                    pendingResult.success(token);
+                                    pendingResult = null;
+                                    dismissCheckoutView();
+                                }
 
-                FrameLayout rootLayout = activity.findViewById(android.R.id.content);
-                final View checkoutView = View.inflate(context, R.layout.flutter_checkout_layout, rootLayout);
+                                @Override
+                                public void onError(String errorMessage) {
+                                    pendingResult.error(HANDLE_3DS_ERROR, errorMessage, null);
+                                    pendingResult = null;
+                                    dismissCheckoutView();
+                                }
 
-                PaymentForm paymentForm = checkoutView.findViewById(R.id.checkout_card_form);
-                paymentForm.set3DSListener(m3DSecureListener); // pass the callback
-                paymentForm.handle3DS(
-                        authUrl, // the 3D Secure URL
-                        successUrl, // the Redirection URL
-                        failUrl // the Redirection Fail URL
-                );
+                                private void dismissCheckoutView() {
+                                    FrameLayout rootLayout = activity.findViewById(android.R.id.content);
+                                    rootLayout.removeViewAt(rootLayout.getChildCount() - 1);
+                                }
+                            };
+
+                    FrameLayout rootLayout = activity.findViewById(android.R.id.content);
+                    final View checkoutView = View.inflate(context, R.layout.flutter_checkout_layout, rootLayout);
+
+                    PaymentForm paymentForm = checkoutView.findViewById(R.id.checkout_card_form);
+                    paymentForm.set3DSListener(m3DSecureListener); // pass the callback
+                    paymentForm.handle3DS(
+                            authUrl, // the 3D Secure URL
+                            successUrl, // the Redirection URL
+                            failUrl // the Redirection Fail URL
+                    );
+                } catch (Exception ex) {
+                    result.error(HANDLE_3DS_ERROR, ex.getMessage(), ex.getLocalizedMessage());
+                }
                 break;
             default:
                 result.notImplemented();
