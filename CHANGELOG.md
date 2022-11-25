@@ -1,3 +1,7 @@
+## 1.2.0
+Some improvements
+Confirm it works with Flutter 3.3.x
+
 ## 1.1.0
 Add `handle3DS` method.
 Upgraded Android to frames: 3.1.2
