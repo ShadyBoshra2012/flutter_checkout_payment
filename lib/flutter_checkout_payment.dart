@@ -23,6 +23,7 @@ class FlutterCheckoutPayment {
   static const String INIT_ERROR = "1";
   static const String GENERATE_TOKEN_ERROR = "2";
   static const String IS_CARD_VALID_ERROR = "3";
+  static const String HANDLE_3DS_ERROR = "4";
 
   /// Initialize the channel
   static const MethodChannel _channel = const MethodChannel(CHANNEL_NAME);
@@ -35,9 +36,7 @@ class FlutterCheckoutPayment {
     try {
       return await _channel.invokeMethod(METHOD_INIT, <String, String>{'key': key, 'environment': environment.toString()});
     } on PlatformException catch (e) {
-      if (e.code == INIT_ERROR)
-        throw "Error Occurred: Code: $INIT_ERROR. Message: ${e.message}. Details: SDK Initialization Error";
-      throw "Error Occurred: Code: ${e.code}. Message: ${e.message}. Details: ${e.details}";
+      throw FlutterCheckoutException.fromPlatformException(e);
     }
   }
 
@@ -68,9 +67,7 @@ class FlutterCheckoutPayment {
       });
       return CardTokenisationResponse.fromString(stringJSON);
     } on PlatformException catch (e) {
-      if (e.code == GENERATE_TOKEN_ERROR)
-        throw "Error Occurred: Code: $GENERATE_TOKEN_ERROR. Message: ${e.message}. Details: Generating Token Error";
-      throw "Error Occurred: Code: ${e.code}. Message: ${e.message}. Details: ${e.details}";
+      throw FlutterCheckoutException.fromPlatformException(e);
     }
   }
 
@@ -81,9 +78,7 @@ class FlutterCheckoutPayment {
     try {
       return await _channel.invokeMethod(METHOD_IS_CARD_VALID, <String, String>{'number': number});
     } on PlatformException catch (e) {
-      if (e.code == IS_CARD_VALID_ERROR)
-        throw "Error Occurred: Code: $IS_CARD_VALID_ERROR. Message: ${e.message}. Details: Validation Card Number Error";
-      throw "Error Occurred: Code: ${e.code}. Message: ${e.message}. Details: ${e.details}";
+      throw FlutterCheckoutException.fromPlatformException(e);
     }
   }
 
@@ -103,9 +98,68 @@ class FlutterCheckoutPayment {
         'authUrl': authUrl
       });
     } on PlatformException catch (e) {
-      throw "Error Occurred: Code: ${e.code}. Message: ${e
-          .message}. Details: ${e.details}";
+      throw FlutterCheckoutException.fromPlatformException(e);
     }
   }
   
+}
+
+enum FlutterCheckoutExceptionCode {
+  SDK_INITIALIZATION_ERROR,
+  TOKEN_GENERATION_ERROR,
+  CARD_NUMBER_VALIDATION_ERROR,
+  HANDLE_3DS_ERROR,
+  UNEXPECTED_ERROR,
+}
+
+class FlutterCheckoutException implements Exception {
+  const FlutterCheckoutException([
+    this.code = FlutterCheckoutExceptionCode.UNEXPECTED_ERROR,
+    this.message =
+    'An unknown error occurred.',
+    this.details = null,
+  ]);
+
+  factory FlutterCheckoutException.fromPlatformException(
+      PlatformException platformException) {
+    switch (platformException.code) {
+      case FlutterCheckoutPayment.INIT_ERROR:
+        return FlutterCheckoutException(
+          FlutterCheckoutExceptionCode.SDK_INITIALIZATION_ERROR,
+          platformException.message,
+          platformException.details,
+        );
+      case FlutterCheckoutPayment.GENERATE_TOKEN_ERROR:
+        return FlutterCheckoutException(
+          FlutterCheckoutExceptionCode.TOKEN_GENERATION_ERROR,
+          platformException.message,
+          platformException.details,
+        );
+      case FlutterCheckoutPayment.IS_CARD_VALID_ERROR:
+        return FlutterCheckoutException(
+          FlutterCheckoutExceptionCode.CARD_NUMBER_VALIDATION_ERROR,
+          platformException.message,
+          platformException.details,
+        );
+      case FlutterCheckoutPayment.HANDLE_3DS_ERROR:
+        return FlutterCheckoutException(
+          FlutterCheckoutExceptionCode.HANDLE_3DS_ERROR,
+          platformException.message,
+          platformException.details,
+        );
+      default:
+        return const FlutterCheckoutException();
+    }
+  }
+
+  final FlutterCheckoutExceptionCode code;
+
+  final String? message;
+
+  final dynamic details;
+
+  @override
+  String toString() {
+    return "$message";
+  }
 }

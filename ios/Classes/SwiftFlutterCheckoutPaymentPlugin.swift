@@ -11,7 +11,7 @@ public class SwiftFlutterCheckoutPaymentPlugin: NSObject, FlutterPlugin {
     private var METHOD_INIT : String = "init"
     private var METHOD_GENERATE_TOKEN : String = "generateToken"
     private var METHOD_IS_CARD_VALID : String = "isCardValid"
-    private var HANDLE_3DS : String = "handle3DS"
+    private var METHOD_HANDLE_3DS : String = "handle3DS"
 
     /// Error codes returned to Flutter if there's an error.
     private var GENERATE_TOKEN_ERROR : String = "2"
@@ -70,10 +70,10 @@ public class SwiftFlutterCheckoutPaymentPlugin: NSObject, FlutterPlugin {
                             let json = String(data: jsonData, encoding: String.Encoding.utf8)
                             result(json)
                         case .failure(let ex):
-                            result(FlutterError(code: "1", message: ex.localizedDescription, details: nil))
+                            result(FlutterError(code: self.GENERATE_TOKEN_ERROR, message: ex.localizedDescription, details: nil))
                         }
                     } catch {
-                       result(FlutterError(code: "0", message: error.localizedDescription, details: nil))
+                        result(FlutterError(code: self.GENERATE_TOKEN_ERROR, message: error.localizedDescription, details: nil))
                     }
                 })
                 return
@@ -131,7 +131,7 @@ public class SwiftFlutterCheckoutPaymentPlugin: NSObject, FlutterPlugin {
             // Return the boolean result.
             result(isCardValid)
         }
-        else if call.method == HANDLE_3DS {
+        else if call.method == METHOD_HANDLE_3DS {
             currentFlutterResult = result
 
             let args = call.arguments as? [String: Any]
@@ -146,17 +146,30 @@ public class SwiftFlutterCheckoutPaymentPlugin: NSObject, FlutterPlugin {
             threeDSWebViewController.authUrl = URL(string: authUrl)
             threeDSWebViewController.delegate = self
 
-            let rootViewController: UIViewController! = UIApplication.shared.keyWindow?.rootViewController
+            let rootViewController: UIViewController! = UIApplication.shared.windows.first { $0.isKeyWindow}?.rootViewController
 
+            var navigationController: UINavigationController! = nil
             if (rootViewController is UINavigationController) {
-                (rootViewController as! UINavigationController).pushViewController(threeDSWebViewController, animated:true)
+                navigationController = rootViewController as? UINavigationController
             } else {
-                let navigationController: UINavigationController! = UINavigationController(rootViewController:threeDSWebViewController)
-                rootViewController.present(navigationController, animated:true, completion:nil)
+                navigationController = UINavigationController(rootViewController: threeDSWebViewController)
             }
+
+            navigationController.presentationController?.delegate = self
+            rootViewController.present(navigationController, animated: true, completion: nil)
         }
         else {
             result(FlutterMethodNotImplemented)
+        }
+    }
+}
+
+extension SwiftFlutterCheckoutPaymentPlugin: UIAdaptivePresentationControllerDelegate {
+    public func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+        // user dismissed the sheet, treat as failure
+        if let result = currentFlutterResult {
+            result(nil)
+            currentFlutterResult = nil
         }
     }
 }
@@ -165,7 +178,7 @@ extension SwiftFlutterCheckoutPaymentPlugin: ThreedsWebViewControllerDelegate {
 
     public func threeDSWebViewControllerAuthenticationDidSucceed(_ threeDSWebViewController: ThreedsWebViewController, token: String?) {
         // Handle successful 3DS.
-        let rootViewController: UIViewController! = UIApplication.shared.keyWindow?.rootViewController
+        let rootViewController: UIViewController! = UIApplication.shared.windows.first { $0.isKeyWindow}?.rootViewController
         rootViewController.dismiss(animated: true)
 
         if let result = currentFlutterResult {
@@ -176,7 +189,7 @@ extension SwiftFlutterCheckoutPaymentPlugin: ThreedsWebViewControllerDelegate {
 
     public func threeDSWebViewControllerAuthenticationDidFail(_ threeDSWebViewController: ThreedsWebViewController) {
         // Handle failed 3DS.
-        let rootViewController: UIViewController! = UIApplication.shared.keyWindow?.rootViewController
+        let rootViewController: UIViewController! = UIApplication.shared.windows.first { $0.isKeyWindow}?.rootViewController
         rootViewController.dismiss(animated: true)
 
         if let result = currentFlutterResult {
