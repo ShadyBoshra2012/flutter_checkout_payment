@@ -1,4 +1,5 @@
 import Flutter
+import Checkout
 import UIKit
 import Frames
 
@@ -17,9 +18,11 @@ public class SwiftFlutterCheckoutPaymentPlugin: NSObject, FlutterPlugin {
     private var GENERATE_TOKEN_ERROR : String = "2"
 
     /// Checkout API iOS Platform
-    private var checkoutAPIClient : CheckoutAPIClient! = nil
+    private var checkoutAPIClient : Frames.CheckoutAPIService! = nil
 
     private var currentFlutterResult: FlutterResult? = nil
+
+    private var environment: Frames.Environment!
 
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: CHANNEL_NAME, binaryMessenger: registrar.messenger())
@@ -38,8 +41,9 @@ public class SwiftFlutterCheckoutPaymentPlugin: NSObject, FlutterPlugin {
             let key : String = args["key"] as! String
             let environmentString : String = args["environment"] as! String
 
+            environment = environmentString == "Environment.SANDBOX" ? Frames.Environment.sandbox : Frames.Environment.live
             // Init Checkout API
-            checkoutAPIClient = CheckoutAPIClient(publicKey: key, environment: environmentString == "Environment.SANDBOX" ? .sandbox : .live)
+            checkoutAPIClient = CheckoutAPIService(publicKey: key, environment: environment)
 
             // Return true if success.
             result(true)
@@ -51,22 +55,24 @@ public class SwiftFlutterCheckoutPaymentPlugin: NSObject, FlutterPlugin {
             let cardNumber : String = args!["number"] as! String
             let name : String = args!["name"] as! String
             let expiryMonth : String = args!["expiryMonth"] as! String
+            let expiryMonthInt = Int(expiryMonth)!
             let expiryYear : String = args!["expiryYear"] as! String
+            let expiryYearInt = Int(expiryYear)!
             let cvv : String = args!["cvv"] as! String
 
-            // Init CkoCardTokenRequest without billing model
+            // Init card without billing address / phone number
             // if not found and generate token.
             guard let billingModelDictionary = args!["billingModel"] as? [String: Any], let phoneModelDictionary = billingModelDictionary["phoneModel"] as? [String: Any] else {
-                let cardTokenRequest = CkoCardTokenRequest(number: cardNumber, expiryMonth: expiryMonth, expiryYear: expiryYear, cvv: cvv, name: name)
+                let card = Card(number: cardNumber, expiryDate: ExpiryDate(month: expiryMonthInt, year: expiryYearInt), name: name, cvv: cvv, billingAddress: nil, phone: nil)
 
                 // create the card token request
-                checkoutAPIClient.createCardToken(card: cardTokenRequest, completion: { results in
+                checkoutAPIClient.createToken(.card(card)) { createTokenResult in
                     do {
-                        switch results {
-                        case .success:
-                            // Return a result with the token.
+                        switch createTokenResult {
+                        case let .success(tokenDetails):
+                            let tokenResponse = CardTokenisationResponse(type: tokenDetails.type.rawValue, token: tokenDetails.token, expiresOn: tokenDetails.expiresOn, expiryMonth: tokenDetails.expiryDate.month, expiryYear: tokenDetails.expiryDate.year, scheme: tokenDetails.scheme, last4: tokenDetails.last4, cardType: tokenDetails.cardType, cardCategory: tokenDetails.cardCategory, issuer: tokenDetails.issuer, issuerCountry: tokenDetails.issuerCountry, productId: tokenDetails.productId, productType: tokenDetails.productType, name: tokenDetails.name)
                             let jsonEncoder = JSONEncoder()
-                            let jsonData = try jsonEncoder.encode(results.get())
+                            let jsonData = try jsonEncoder.encode(tokenResponse)
                             let json = String(data: jsonData, encoding: String.Encoding.utf8)
                             result(json)
                         case .failure(let ex):
@@ -75,7 +81,7 @@ public class SwiftFlutterCheckoutPaymentPlugin: NSObject, FlutterPlugin {
                     } catch {
                         result(FlutterError(code: self.GENERATE_TOKEN_ERROR, message: error.localizedDescription, details: nil))
                     }
-                })
+                }
                 return
             }
 
@@ -90,22 +96,28 @@ public class SwiftFlutterCheckoutPaymentPlugin: NSObject, FlutterPlugin {
             let phoneNumber : String = phoneModelDictionary["number"] as! String
 
             // create the phone number
-            let phoneModel = CkoPhoneNumber(countryCode: countryCode, number: phoneNumber)
+            let phoneModel = Checkout.Phone(number: phoneNumber, country: Country(iso3166Alpha2: countryCode))
 
             // create the address
-            let billingModel = CkoAddress(addressLine1: addressLine1, addressLine2: addressLine2, city: city, state: state, zip: zip, country: country)
+            let billingModel = Checkout.Address(addressLine1: addressLine1, addressLine2: addressLine2, city: city, state: state, zip: zip, country: Country(iso3166Alpha2: country))
 
             // create the card token request and generate the token.
-            let cardTokenRequest = CkoCardTokenRequest(number: cardNumber, expiryMonth: expiryMonth, expiryYear: expiryYear, cvv: cvv, name: name, billingAddress: billingModel, phone: phoneModel)
+            let card = Card(number: cardNumber, expiryDate: ExpiryDate(month: expiryMonthInt, year: expiryYearInt), name: name, cvv: cvv, billingAddress: billingModel, phone: phoneModel)
 
             // create the card token request
-            checkoutAPIClient.createCardToken(card: cardTokenRequest, completion: { [self] results in
+            checkoutAPIClient.createToken(.card(card), completion: { createTokenResult in
                 do {
-                    switch results {
-                    case .success:
-                        // Return a result with the token.
+                    switch createTokenResult {
+                    case let .success(tokenDetails):
+                        let responseBillingAddress = tokenDetails.billingAddress!
+                        let billingAddress = BillingAddress(addressLine1: responseBillingAddress.addressLine1, addressLine2: responseBillingAddress.addressLine2, postcode: responseBillingAddress.zip, country: responseBillingAddress.country?.iso3166Alpha2, city: responseBillingAddress.city, state: responseBillingAddress.state)
+
+                        let responsePhoneNumber = tokenDetails.phone!
+                        let phone = Phone(countryCode: responsePhoneNumber.countryCode, number: responsePhoneNumber.number)
+
+                        let tokenResponse = CardTokenisationResponse(type: tokenDetails.type.rawValue, token: tokenDetails.token, expiresOn: tokenDetails.expiresOn, expiryMonth: tokenDetails.expiryDate.month, expiryYear: tokenDetails.expiryDate.year, scheme: tokenDetails.scheme, last4: tokenDetails.last4, cardType: tokenDetails.cardType, cardCategory: tokenDetails.cardCategory, issuer: tokenDetails.issuer, issuerCountry: tokenDetails.issuerCountry, productId: tokenDetails.productId, productType: tokenDetails.productType, name: tokenDetails.name, billingAddress: billingAddress, phone: phone)
                         let jsonEncoder = JSONEncoder()
-                        let jsonData = try jsonEncoder.encode(results.get())
+                        let jsonData = try jsonEncoder.encode(tokenResponse)
                         let json = String(data: jsonData, encoding: String.Encoding.utf8)
                         result(json)
                     case .failure(let ex):
@@ -115,7 +127,6 @@ public class SwiftFlutterCheckoutPaymentPlugin: NSObject, FlutterPlugin {
                     result(FlutterError(code: self.GENERATE_TOKEN_ERROR, message: error.localizedDescription, details: nil))
                 }
             })
-//            result(FlutterError(code: error.requestId, message: error.errorType, details: nil))
         }
         else if call.method == METHOD_IS_CARD_VALID {
 
@@ -124,12 +135,19 @@ public class SwiftFlutterCheckoutPaymentPlugin: NSObject, FlutterPlugin {
 
             let cardNumber : String = args!["number"] as! String
 
+            var checkoutEnv: Checkout.Environment = .sandbox
+            if (environment == .live) {
+                checkoutEnv = .production
+            }
             /// verify card number
-            let cardUtils = CardUtils()
-            let isCardValid = cardUtils.isValid(cardNumber: cardNumber)
-
-            // Return the boolean result.
-            result(isCardValid)
+            let cardValidator = CardValidator(environment: checkoutEnv)
+            let isCardValid = cardValidator.validate(cardNumber: cardNumber)
+            switch isCardValid {
+            case .success:
+                result(true)
+            case .failure:
+                result(false)
+            }
         }
         else if call.method == METHOD_HANDLE_3DS {
             currentFlutterResult = result
@@ -141,9 +159,9 @@ public class SwiftFlutterCheckoutPaymentPlugin: NSObject, FlutterPlugin {
             let authUrl : String = args!["authUrl"] as! String
 
             let threeDSWebViewController = ThreedsWebViewController.init(
-                successUrl: URL(string: successUrl)!,
+                environment: environment, successUrl: URL(string: successUrl)!,
                 failUrl: URL(string: failUrl)!)
-            threeDSWebViewController.authUrl = URL(string: authUrl)
+            threeDSWebViewController.authURL = URL(string: authUrl)
             threeDSWebViewController.delegate = self
 
             let rootViewController: UIViewController! = UIApplication.shared.windows.first { $0.isKeyWindow}?.rootViewController
