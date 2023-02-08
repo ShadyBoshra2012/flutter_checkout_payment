@@ -67,6 +67,7 @@ print(response.token);
 | Future\<CardTokenisationResponse> | **generateToken({@required String number, @required String name, @required String expiryMonth, @required String expiryYear, @required String cvv, BillingModel billingModel})** <br>Generate the token which it will be used to make the payment, return the CardTokenisationResponse value.|
 | Future\<bool> | **isCardValid({@required String number})** <br>Check whether the card number is valid or not, return a bool with the result.|
 | Future\<String> | **handle3DS({@required String authUrl, @required String successUrl, @required String failUrl})** <br>Handle a 3DS challenge, returns token if success or null if failure. |
+| Future\<CardTokenisationResponse> | **generateApplePayToken({@required String paymentDataBase64})** <br>Generate the token based on Apple pay data and return the CardTokenisationResponse value. |
 
 The rest of methods are under development.
 

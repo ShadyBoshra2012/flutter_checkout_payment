@@ -11,6 +11,7 @@ public class SwiftFlutterCheckoutPaymentPlugin: NSObject, FlutterPlugin {
     /// Methods name which detect which it called from Flutter.
     private var METHOD_INIT : String = "init"
     private var METHOD_GENERATE_TOKEN : String = "generateToken"
+    private var METHOD_GENERATE_APPLE_PAY_TOKEN : String = "generateApplePayToken"
     private var METHOD_IS_CARD_VALID : String = "isCardValid"
     private var METHOD_HANDLE_3DS : String = "handle3DS"
 
@@ -70,11 +71,8 @@ public class SwiftFlutterCheckoutPaymentPlugin: NSObject, FlutterPlugin {
                     do {
                         switch createTokenResult {
                         case let .success(tokenDetails):
-                            let tokenResponse = CardTokenisationResponse(type: tokenDetails.type.rawValue, token: tokenDetails.token, expiresOn: tokenDetails.expiresOn, expiryMonth: tokenDetails.expiryDate.month, expiryYear: tokenDetails.expiryDate.year, scheme: tokenDetails.scheme, last4: tokenDetails.last4, cardType: tokenDetails.cardType, cardCategory: tokenDetails.cardCategory, issuer: tokenDetails.issuer, issuerCountry: tokenDetails.issuerCountry, productId: tokenDetails.productId, productType: tokenDetails.productType, name: tokenDetails.name)
-                            let jsonEncoder = JSONEncoder()
-                            let jsonData = try jsonEncoder.encode(tokenResponse)
-                            let json = String(data: jsonData, encoding: String.Encoding.utf8)
-                            result(json)
+                            let tokenResponse = try self.tokenDetailsToTokenisationResponseString(tokenDetails: tokenDetails)
+                            result(tokenResponse)
                         case .failure(let ex):
                             result(FlutterError(code: self.GENERATE_TOKEN_ERROR, message: ex.localizedDescription, details: nil))
                         }
@@ -105,21 +103,12 @@ public class SwiftFlutterCheckoutPaymentPlugin: NSObject, FlutterPlugin {
             let card = Card(number: cardNumber, expiryDate: ExpiryDate(month: expiryMonthInt, year: expiryYearInt), name: name, cvv: cvv, billingAddress: billingModel, phone: phoneModel)
 
             // create the card token request
-            checkoutAPIClient.createToken(.card(card), completion: { createTokenResult in
+            checkoutAPIClient.createToken(.card(card), completion: { [self] createTokenResult in
                 do {
                     switch createTokenResult {
                     case let .success(tokenDetails):
-                        let responseBillingAddress = tokenDetails.billingAddress!
-                        let billingAddress = BillingAddress(addressLine1: responseBillingAddress.addressLine1, addressLine2: responseBillingAddress.addressLine2, postcode: responseBillingAddress.zip, country: responseBillingAddress.country?.iso3166Alpha2, city: responseBillingAddress.city, state: responseBillingAddress.state)
-
-                        let responsePhoneNumber = tokenDetails.phone!
-                        let phone = Phone(countryCode: responsePhoneNumber.countryCode, number: responsePhoneNumber.number)
-
-                        let tokenResponse = CardTokenisationResponse(type: tokenDetails.type.rawValue, token: tokenDetails.token, expiresOn: tokenDetails.expiresOn, expiryMonth: tokenDetails.expiryDate.month, expiryYear: tokenDetails.expiryDate.year, scheme: tokenDetails.scheme, last4: tokenDetails.last4, cardType: tokenDetails.cardType, cardCategory: tokenDetails.cardCategory, issuer: tokenDetails.issuer, issuerCountry: tokenDetails.issuerCountry, productId: tokenDetails.productId, productType: tokenDetails.productType, name: tokenDetails.name, billingAddress: billingAddress, phone: phone)
-                        let jsonEncoder = JSONEncoder()
-                        let jsonData = try jsonEncoder.encode(tokenResponse)
-                        let json = String(data: jsonData, encoding: String.Encoding.utf8)
-                        result(json)
+                        let tokenResponse = try self.tokenDetailsToTokenisationResponseString(tokenDetails: tokenDetails)
+                        result(tokenResponse)
                     case .failure(let ex):
                         result(FlutterError(code: self.GENERATE_TOKEN_ERROR, message: ex.localizedDescription, details: nil))
                     }
@@ -127,6 +116,27 @@ public class SwiftFlutterCheckoutPaymentPlugin: NSObject, FlutterPlugin {
                     result(FlutterError(code: self.GENERATE_TOKEN_ERROR, message: error.localizedDescription, details: nil))
                 }
             })
+        }
+        else if call.method == METHOD_GENERATE_APPLE_PAY_TOKEN {
+            // Get the args from Flutter.
+            let args = call.arguments as! [String: Any]
+            let paymentDataBase64 : String = args["paymentDataBase64"] as! String
+            let paymentData = Data(base64Encoded: paymentDataBase64)!
+
+            // Request an Apple Pay token.
+            checkoutAPIClient.createToken(.applePay(ApplePay(tokenData: paymentData))) { createTokenResult in
+                switch createTokenResult {
+                case .success(let tokenDetails):
+                    do {
+                        let tokenResponse = try self.tokenDetailsToTokenisationResponseString(tokenDetails: tokenDetails)
+                        result(tokenResponse)
+                    } catch {
+                        result(FlutterError(code: self.GENERATE_TOKEN_ERROR, message: error.localizedDescription, details: nil))
+                    }
+                case .failure(let error):
+                    result(FlutterError(code: self.GENERATE_TOKEN_ERROR, message: error.localizedDescription, details: nil))
+                }
+            }
         }
         else if call.method == METHOD_IS_CARD_VALID {
 
@@ -179,6 +189,25 @@ public class SwiftFlutterCheckoutPaymentPlugin: NSObject, FlutterPlugin {
         else {
             result(FlutterMethodNotImplemented)
         }
+    }
+
+    fileprivate func tokenDetailsToTokenisationResponseString(tokenDetails: TokenDetails) throws -> String {
+        var billingAddress: BillingAddress? = nil
+        if let responseBillingAddress = tokenDetails.billingAddress {
+            billingAddress = BillingAddress(addressLine1: responseBillingAddress.addressLine1, addressLine2: responseBillingAddress.addressLine2, postcode: responseBillingAddress.zip, country: responseBillingAddress.country?.iso3166Alpha2, city: responseBillingAddress.city, state: responseBillingAddress.state)
+        }
+
+        var phone: Phone? = nil
+        if let responsePhoneNumber = tokenDetails.phone {
+            phone = Phone(countryCode: responsePhoneNumber.countryCode, number: responsePhoneNumber.number)
+        }
+
+        let response = CardTokenisationResponse(type: tokenDetails.type.rawValue, token: tokenDetails.token, expiresOn: tokenDetails.expiresOn, expiryMonth: tokenDetails.expiryDate.month, expiryYear: tokenDetails.expiryDate.year, scheme: tokenDetails.scheme, last4: tokenDetails.last4, cardType: tokenDetails.cardType, cardCategory: tokenDetails.cardCategory, issuer: tokenDetails.issuer, issuerCountry: tokenDetails.issuerCountry, productId: tokenDetails.productId, productType: tokenDetails.productType, name: tokenDetails.name, billingAddress: billingAddress, phone: phone)
+
+        let jsonEncoder = JSONEncoder()
+        let jsonData = try jsonEncoder.encode(response)
+        let json = String(data: jsonData, encoding: String.Encoding.utf8)
+        return json!
     }
 }
 
