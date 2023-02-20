@@ -68,6 +68,7 @@ print(response.token);
 | Future\<bool> | **isCardValid({@required String number})** <br>Check whether the card number is valid or not, return a bool with the result.|
 | Future\<String> | **handle3DS({@required String authUrl, @required String successUrl, @required String failUrl})** <br>Handle a 3DS challenge, returns token if success or null if failure. |
 | Future\<CardTokenisationResponse> | **generateApplePayToken({@required String paymentDataBase64})** <br>Generate the token based on Apple pay data and return the CardTokenisationResponse value. |
+| Future\<CardTokenisationResponse> | **generateGooglePayToken({@required String tokenJsonPayload})** <br>Generate the token based on Google pay data and return the CardTokenisationResponse value. |  
 
 The rest of methods are under development.
 

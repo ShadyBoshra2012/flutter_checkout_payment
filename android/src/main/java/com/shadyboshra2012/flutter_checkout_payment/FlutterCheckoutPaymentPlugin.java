@@ -42,6 +42,7 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
     /// Methods name which detect which it called from Flutter.
     private static final String METHOD_INIT = "init";
     private static final String METHOD_GENERATE_TOKEN = "generateToken";
+    private static final String METHOD_GENERATE_GOOGLE_PAY_TOKEN = "generateGooglePayToken";
     private static final String METHOD_IS_CARD_VALID = "isCardValid";
     private static final String METHOD_HANDLE_3DS = "handle3DS";
 
@@ -120,7 +121,7 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
                     String environmentString = call.argument("environment");
                     assert environmentString != null;
                     Environment environment = (environmentString.equals("Environment.SANDBOX"))
-                            ? Environment.SANDBOX : Environment.PRODUCTION;
+                        ? Environment.SANDBOX : Environment.PRODUCTION;
 
                     // Init Checkout API
                     mCheckoutAPIClient = CheckoutApiServiceFactory.create(
@@ -201,6 +202,32 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
                     });
 
                     mCheckoutAPIClient.createToken(cardTokenisationRequest);
+                } catch (Exception ex) {
+                    // Return error.
+                    result.error(GENERATE_TOKEN_ERROR, ex.getMessage(), ex.getLocalizedMessage());
+                }
+                break;
+            case METHOD_GENERATE_GOOGLE_PAY_TOKEN:
+                try {
+                    // Set pendingResult to result to use it in callbacks.
+                    pendingResult = result;
+
+                    // Get the args from Flutter.
+                    String tokenJsonPayload = call.argument("tokenJsonPayload");
+
+                    // Generate the token.
+                    GooglePayTokenRequest googlePayTokenRequest = new GooglePayTokenRequest(tokenJsonPayload, tokenDetails -> {
+                        Gson gson = new Gson();
+                        pendingResult.success(gson.toJson(tokenDetails));
+
+                        return Unit.INSTANCE;
+                    }, error -> {
+                        pendingResult.error(GENERATE_TOKEN_ERROR, error, null);
+
+                        return Unit.INSTANCE;
+                    });
+
+                    mCheckoutAPIClient.createToken(googlePayTokenRequest);
                 } catch (Exception ex) {
                     // Return error.
                     result.error(GENERATE_TOKEN_ERROR, ex.getMessage(), ex.getLocalizedMessage());
