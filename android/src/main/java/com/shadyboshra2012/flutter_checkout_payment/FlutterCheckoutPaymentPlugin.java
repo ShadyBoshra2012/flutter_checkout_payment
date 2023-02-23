@@ -64,9 +64,6 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
     @SuppressLint("StaticFieldLeak")
     private static Context context;
 
-    /// Variable to hold the result object when it need to coded inside callbacks.
-    private Result pendingResult;
-
     private Activity activity;
 
     @Override
@@ -141,7 +138,7 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
             case METHOD_GENERATE_TOKEN:
                 try {
                     // Set pendingResult to result to use it in callbacks.
-                    pendingResult = result;
+                    final Result pendingResult = result;
 
                     // Get the args from Flutter.
                     String cardNumber = call.argument("number");
@@ -210,7 +207,7 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
             case METHOD_GENERATE_GOOGLE_PAY_TOKEN:
                 try {
                     // Set pendingResult to result to use it in callbacks.
-                    pendingResult = result;
+                    final Result pendingResult = result;;
 
                     // Get the args from Flutter.
                     String tokenJsonPayload = call.argument("tokenJsonPayload");
@@ -250,7 +247,8 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
                 break;
             case METHOD_HANDLE_3DS:
                 try {
-                    pendingResult = result;
+                    // Set pendingResult to result to use it in callbacks.
+                    final Result pendingResult = result;
 
                     // Get the args from Flutter.
                     String authUrl = call.argument("authUrl");
@@ -259,22 +257,25 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
 
                     FrameLayout rootLayout = activity.findViewById(android.R.id.content);
                     ThreeDSRequest threeDSRequest = new ThreeDSRequest(rootLayout, authUrl, successUrl, failUrl,  threeDSResult -> {
+                        if (pendingResult == null) {
+                            // don't ask me why, but somehow this result handler is sometimes called multiple times
+                            // let's ignore it to avoid "Reply already submitted"
+                            return null;
+                        }
+
                         if (threeDSResult instanceof ThreeDSResult.Success) {
                             /* Handle success result */
                             String token = ((ThreeDSResult.Success) threeDSResult).getToken();
                             pendingResult.success(token);
-                            pendingResult = null;
                             rootLayout.removeViewAt(rootLayout.getChildCount() - 1);
                         } else if (threeDSResult instanceof ThreeDSResult.Error) {
                             /* Handle error result */
                             String errorMessage = ((ThreeDSResult.Error) threeDSResult).getError().getMessage();
                             pendingResult.error(HANDLE_3DS_ERROR, errorMessage, null);
-                            pendingResult = null;
                             rootLayout.removeViewAt(rootLayout.getChildCount() - 1);
                         } else {
                             /* Handle failure result */
                             pendingResult.error(HANDLE_3DS_ERROR, null, null);
-                            pendingResult = null;
                             rootLayout.removeViewAt(rootLayout.getChildCount() - 1);
                         }
                         return null;
