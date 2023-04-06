@@ -248,7 +248,7 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
             case METHOD_HANDLE_3DS:
                 try {
                     // Set pendingResult to result to use it in callbacks.
-                    final Result pendingResult = result;
+                    Result[] pendingResultHolder = new Result[] { result };
 
                     // Get the args from Flutter.
                     String authUrl = call.argument("authUrl");
@@ -257,6 +257,7 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
 
                     FrameLayout rootLayout = activity.findViewById(android.R.id.content);
                     ThreeDSRequest threeDSRequest = new ThreeDSRequest(rootLayout, authUrl, successUrl, failUrl,  threeDSResult -> {
+                        final Result pendingResult = pendingResultHolder[0];
                         if (pendingResult == null) {
                             // don't ask me why, but somehow this result handler is sometimes called multiple times
                             // let's ignore it to avoid "Reply already submitted"
@@ -267,15 +268,18 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
                             /* Handle success result */
                             String token = ((ThreeDSResult.Success) threeDSResult).getToken();
                             pendingResult.success(token);
+                            pendingResultHolder[0] = null;
                             rootLayout.removeViewAt(rootLayout.getChildCount() - 1);
                         } else if (threeDSResult instanceof ThreeDSResult.Error) {
                             /* Handle error result */
                             String errorMessage = ((ThreeDSResult.Error) threeDSResult).getError().getMessage();
                             pendingResult.error(HANDLE_3DS_ERROR, errorMessage, null);
+                            pendingResultHolder[0] = null;
                             rootLayout.removeViewAt(rootLayout.getChildCount() - 1);
                         } else {
                             /* Handle failure result */
                             pendingResult.error(HANDLE_3DS_ERROR, null, null);
+                            pendingResultHolder[0] = null;
                             rootLayout.removeViewAt(rootLayout.getChildCount() - 1);
                         }
                         return null;
