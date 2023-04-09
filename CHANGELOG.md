@@ -1,3 +1,8 @@
+## 1.2.1
+Upgrade Checkout SDK to v4.
+Add `generateApplePayToken` and `generateGooglePayToken` methods.
+Confirm it works with Flutter 3.7.x
+
 ## 1.2.0
 Some improvements
 Confirm it works with Flutter 3.3.x

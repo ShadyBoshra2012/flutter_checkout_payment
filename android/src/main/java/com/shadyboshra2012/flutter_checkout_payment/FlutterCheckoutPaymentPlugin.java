@@ -8,16 +8,15 @@ import android.view.View;
 import android.widget.FrameLayout;
 import androidx.annotation.NonNull;
 
-import com.checkout.android_sdk.CheckoutAPIClient;
-import com.checkout.android_sdk.Models.BillingModel;
-import com.checkout.android_sdk.Models.PhoneModel;
-import com.checkout.android_sdk.PaymentForm;
-import com.checkout.android_sdk.Request.CardTokenisationRequest;
-import com.checkout.android_sdk.Response.CardTokenisationFail;
-import com.checkout.android_sdk.Response.CardTokenisationResponse;
-import com.checkout.android_sdk.Utils.CardUtils;
-import com.checkout.android_sdk.Utils.Environment;
-import com.checkout.android_sdk.network.NetworkError;
+import com.checkout.CardValidatorFactory;
+import com.checkout.CheckoutApiServiceFactory;
+import com.checkout.api.CheckoutApiService;
+import com.checkout.base.model.Country;
+import com.checkout.base.model.Environment;
+import com.checkout.threedsecure.model.ThreeDSRequest;
+import com.checkout.threedsecure.model.ThreeDSResult;
+import com.checkout.tokenization.model.*;
+import com.checkout.validation.model.ValidationResult;
 import com.google.gson.Gson;
 
 import java.util.HashMap;
@@ -30,6 +29,7 @@ import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
+import kotlin.Unit;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -42,6 +42,7 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
     /// Methods name which detect which it called from Flutter.
     private static final String METHOD_INIT = "init";
     private static final String METHOD_GENERATE_TOKEN = "generateToken";
+    private static final String METHOD_GENERATE_GOOGLE_PAY_TOKEN = "generateGooglePayToken";
     private static final String METHOD_IS_CARD_VALID = "isCardValid";
     private static final String METHOD_HANDLE_3DS = "handle3DS";
 
@@ -57,12 +58,11 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
     /// when the Flutter Engine is detached from the Activity
     private MethodChannel channel;
 
+    private CheckoutApiService mCheckoutAPIClient;
+
     /// Context to hold it for Payment SDK needs.
     @SuppressLint("StaticFieldLeak")
     private static Context context;
-
-    /// Variable to hold the result object when it need to coded inside callbacks.
-    private Result pendingResult;
 
     private Activity activity;
 
@@ -118,16 +118,15 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
                     String environmentString = call.argument("environment");
                     assert environmentString != null;
                     Environment environment = (environmentString.equals("Environment.SANDBOX"))
-                            ? Environment.SANDBOX : Environment.LIVE;
+                        ? Environment.SANDBOX : Environment.PRODUCTION;
 
                     // Init Checkout API
-                    mCheckoutAPIClient = new CheckoutAPIClient(
-                            context,                // context
-                            key,                   // your public key
-                            environment   // the environment
+                    mCheckoutAPIClient = CheckoutApiServiceFactory.create(
+                        key,                    // your public key
+                        environment,            // the environment
+                        context                 // context
+
                     );
-                    // Set callbacks listeners.
-                    mCheckoutAPIClient.setTokenListener(mTokenListener); // pass the callback
 
                     // Return true for a success.
                     result.success(true);
@@ -139,18 +138,19 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
             case METHOD_GENERATE_TOKEN:
                 try {
                     // Set pendingResult to result to use it in callbacks.
-                    pendingResult = result;
+                    final Result pendingResult = result;
 
                     // Get the args from Flutter.
                     String cardNumber = call.argument("number");
                     String name = call.argument("name");
                     String expiryMonth = call.argument("expiryMonth");
+                    int expiryMonthInt = Integer.parseInt(expiryMonth);
                     String expiryYear = call.argument("expiryYear");
+                    int expiryYearInt = Integer.parseInt(expiryYear);
                     String cvv = call.argument("cvv");
 
                     // Init cardTokenisationRequest without billing model.
-                    CardTokenisationRequest cardTokenisationRequest = new CardTokenisationRequest(
-                            cardNumber, name, expiryMonth, expiryYear, cvv);
+                    Card card = new Card(new ExpiryDate(expiryMonthInt, expiryYearInt), name, cardNumber, cvv, null, null);
 
                     // Check if billing model is set from Flutter.
                     HashMap<String, Object> billingModelMap = call.argument("billingModel");
@@ -168,28 +168,63 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
                         String countryCode = phoneModelMap.get("countryCode").toString();
                         String phoneNumber = phoneModelMap.get("number").toString();
 
-                        BillingModel billingModel = new BillingModel(
-                                addressLine1,
-                                addressLine2,
-                                postcode,
-                                country,
-                                city,
-                                state
+                        Address address = new Address(
+                            addressLine1,
+                            addressLine2,
+                            city,
+                            state,
+                            postcode,
+                            Country.from(country)
                         );
 
-                        PhoneModel phoneModel = new PhoneModel(
-                                countryCode,
-                                phoneNumber
+                        Phone phone = new Phone(
+                            phoneNumber,
+                            Country.from(countryCode)
                         );
 
-                        // Set cardTokenisationRequest with billing model.
-                        cardTokenisationRequest =
-                                new CardTokenisationRequest(cardNumber, name, expiryMonth, expiryYear, cvv,
-                                        billingModel, phoneModel);
+                        // Set card with adress + phone
+                        card = new Card(new ExpiryDate(expiryMonthInt, expiryYearInt), name, cardNumber, cvv, address, phone);
                     }
 
                     // Generate the token.
-                    mCheckoutAPIClient.generateToken(cardTokenisationRequest);
+                    CardTokenRequest cardTokenisationRequest = new CardTokenRequest(card, tokenDetails -> {
+                        Gson gson = new Gson();
+                        pendingResult.success(gson.toJson(tokenDetails));
+
+                        return Unit.INSTANCE;
+                    }, error -> {
+                        pendingResult.error(GENERATE_TOKEN_ERROR, error, null);
+
+                        return Unit.INSTANCE;
+                    });
+
+                    mCheckoutAPIClient.createToken(cardTokenisationRequest);
+                } catch (Exception ex) {
+                    // Return error.
+                    result.error(GENERATE_TOKEN_ERROR, ex.getMessage(), ex.getLocalizedMessage());
+                }
+                break;
+            case METHOD_GENERATE_GOOGLE_PAY_TOKEN:
+                try {
+                    // Set pendingResult to result to use it in callbacks.
+                    final Result pendingResult = result;;
+
+                    // Get the args from Flutter.
+                    String tokenJsonPayload = call.argument("tokenJsonPayload");
+
+                    // Generate the token.
+                    GooglePayTokenRequest googlePayTokenRequest = new GooglePayTokenRequest(tokenJsonPayload, tokenDetails -> {
+                        Gson gson = new Gson();
+                        pendingResult.success(gson.toJson(tokenDetails));
+
+                        return Unit.INSTANCE;
+                    }, error -> {
+                        pendingResult.error(GENERATE_TOKEN_ERROR, error, null);
+
+                        return Unit.INSTANCE;
+                    });
+
+                    mCheckoutAPIClient.createToken(googlePayTokenRequest);
                 } catch (Exception ex) {
                     // Return error.
                     result.error(GENERATE_TOKEN_ERROR, ex.getMessage(), ex.getLocalizedMessage());
@@ -201,11 +236,10 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
                     String cardNumber = call.argument("number");
 
                     // verify card number
-                    boolean isCardValid = CardUtils.isValidCard(cardNumber);
+                    ValidationResult cardValidResult = CardValidatorFactory.create().validateCardNumber(cardNumber);
 
                     // Return the boolean result.
-                    result.success(isCardValid);
-                    ;
+                    result.success(cardValidResult instanceof ValidationResult.Success);
                 } catch (Exception ex) {
                     // Return an error.
                     result.error(IS_CARD_VALID_ERROR, ex.getMessage(), ex.getLocalizedMessage());
@@ -213,45 +247,44 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
                 break;
             case METHOD_HANDLE_3DS:
                 try {
-                    pendingResult = result;
+                    // Set pendingResult to result to use it in callbacks.
+                    Result[] pendingResultHolder = new Result[] { result };
 
                     // Get the args from Flutter.
                     String authUrl = call.argument("authUrl");
                     String failUrl = call.argument("failUrl");
                     String successUrl = call.argument("successUrl");
 
-                    PaymentForm.On3DSFinished m3DSecureListener =
-                            new PaymentForm.On3DSFinished() {
-                                @Override
-                                public void onSuccess(String token) {
-                                    pendingResult.success(token);
-                                    pendingResult = null;
-                                    dismissCheckoutView();
-                                }
-
-                                @Override
-                                public void onError(String errorMessage) {
-                                    pendingResult.error(HANDLE_3DS_ERROR, errorMessage, null);
-                                    pendingResult = null;
-                                    dismissCheckoutView();
-                                }
-
-                                private void dismissCheckoutView() {
-                                    FrameLayout rootLayout = activity.findViewById(android.R.id.content);
-                                    rootLayout.removeViewAt(rootLayout.getChildCount() - 1);
-                                }
-                            };
-
                     FrameLayout rootLayout = activity.findViewById(android.R.id.content);
-                    final View checkoutView = View.inflate(context, R.layout.flutter_checkout_layout, rootLayout);
+                    ThreeDSRequest threeDSRequest = new ThreeDSRequest(rootLayout, authUrl, successUrl, failUrl,  threeDSResult -> {
+                        final Result pendingResult = pendingResultHolder[0];
+                        if (pendingResult == null) {
+                            // don't ask me why, but somehow this result handler is sometimes called multiple times
+                            // let's ignore it to avoid "Reply already submitted"
+                            return null;
+                        }
 
-                    PaymentForm paymentForm = checkoutView.findViewById(R.id.checkout_card_form);
-                    paymentForm.set3DSListener(m3DSecureListener); // pass the callback
-                    paymentForm.handle3DS(
-                            authUrl, // the 3D Secure URL
-                            successUrl, // the Redirection URL
-                            failUrl // the Redirection Fail URL
-                    );
+                        if (threeDSResult instanceof ThreeDSResult.Success) {
+                            /* Handle success result */
+                            String token = ((ThreeDSResult.Success) threeDSResult).getToken();
+                            pendingResult.success(token);
+                            pendingResultHolder[0] = null;
+                            rootLayout.removeViewAt(rootLayout.getChildCount() - 1);
+                        } else if (threeDSResult instanceof ThreeDSResult.Error) {
+                            /* Handle error result */
+                            String errorMessage = ((ThreeDSResult.Error) threeDSResult).getError().getMessage();
+                            pendingResult.error(HANDLE_3DS_ERROR, errorMessage, null);
+                            pendingResultHolder[0] = null;
+                            rootLayout.removeViewAt(rootLayout.getChildCount() - 1);
+                        } else {
+                            /* Handle failure result */
+                            pendingResult.error(HANDLE_3DS_ERROR, null, null);
+                            pendingResultHolder[0] = null;
+                            rootLayout.removeViewAt(rootLayout.getChildCount() - 1);
+                        }
+                        return null;
+                    });
+                    mCheckoutAPIClient.handleThreeDS(threeDSRequest);
                 } catch (Exception ex) {
                     result.error(HANDLE_3DS_ERROR, ex.getMessage(), ex.getLocalizedMessage());
                 }
@@ -266,29 +299,4 @@ public class FlutterCheckoutPaymentPlugin implements FlutterPlugin, MethodCallHa
     public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
         channel.setMethodCallHandler(null);
     }
-
-    /*** Checkout Android Platform ***/
-    private CheckoutAPIClient mCheckoutAPIClient;
-
-    private CheckoutAPIClient.OnTokenGenerated mTokenListener = new CheckoutAPIClient.OnTokenGenerated() {
-        @Override
-        public void onTokenGenerated(CardTokenisationResponse token) {
-            // Using Gson to convert the custom request object into a JSON string for use in the resonse.
-            Gson gson = new Gson();
-            pendingResult.success(gson.toJson(token));
-        }
-
-        @Override
-        public void onError(CardTokenisationFail error) {
-            pendingResult.error(error.getErrorCodes()[0], error.getErrorType(), error.getRequestId());
-        }
-
-        @Override
-        public void onNetworkError(NetworkError error) {
-            // your network error
-            pendingResult.error(error.getNetworkResponse().statusCode + "", error.getMessage(),
-                    error.getNetworkTimeMs());
-        }
-    };
-    /*** Checkout Android Platform ***/
 }

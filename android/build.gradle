@@ -40,6 +40,6 @@ android {
         implementation 'com.google.code.gson:gson:2.8.6'
         implementation 'androidx.viewpager:viewpager:1.0.0'
         implementation 'com.google.android.material:material:1.3.0'
-        implementation 'com.github.checkout:frames-android:3.1.2'
+        implementation 'com.github.checkout:frames-android:4.0.1'
     }
 }

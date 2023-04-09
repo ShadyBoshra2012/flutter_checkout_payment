@@ -16,6 +16,8 @@ class FlutterCheckoutPayment {
   /// Methods name which detect which it called from Flutter.
   static const String METHOD_INIT = "init";
   static const String METHOD_GENERATE_TOKEN = "generateToken";
+  static const String METHOD_GENERATE_APPLE_PAY_TOKEN = "generateApplePayToken";
+  static const String METHOD_GENERATE_GOOGLE_PAY_TOKEN = "generateGooglePayToken";
   static const String METHOD_IS_CARD_VALID = "isCardValid";
   static const String METHOD_HANDLE_3DS = "handle3DS";
 
@@ -101,7 +103,44 @@ class FlutterCheckoutPayment {
       throw FlutterCheckoutException.fromPlatformException(e);
     }
   }
-  
+
+  /// Generate Apple Pay Token.
+  /// See https://api-reference.checkout.com/#operation/requestAToken
+  /// type --> apple_pay
+  ///
+  /// [paymentDataBase64] Base64 encoded representation of PKPayment.token.paymentData
+  static Future<CardTokenisationResponse?> generateApplePayToken({
+    required String paymentDataBase64
+  }) async {
+    try {
+      final String stringJSON = await _channel.invokeMethod(
+          METHOD_GENERATE_APPLE_PAY_TOKEN, <String, dynamic>{
+        'paymentDataBase64': paymentDataBase64,
+      });
+      return CardTokenisationResponse.fromString(stringJSON);
+    } on PlatformException catch (e) {
+      throw FlutterCheckoutException.fromPlatformException(e);
+    }
+  }
+
+  /// Generate Google Pay Token.
+  /// See https://api-reference.checkout.com/#operation/requestAToken
+  /// type --> google_pay
+  ///
+  /// [tokenJsonPayload] String containing result of PaymentData.toJson()["paymentMethodData"]["tokenizationData"]
+  static Future<CardTokenisationResponse?> generateGooglePayToken({
+    required String tokenJsonPayload
+  }) async {
+    try {
+      final String stringJSON = await _channel.invokeMethod(
+          METHOD_GENERATE_GOOGLE_PAY_TOKEN, <String, dynamic>{
+        'tokenJsonPayload': tokenJsonPayload,
+      });
+      return CardTokenisationResponse.fromString(stringJSON);
+    } on PlatformException catch (e) {
+      throw FlutterCheckoutException.fromPlatformException(e);
+    }
+  }
 }
 
 enum FlutterCheckoutExceptionCode {
