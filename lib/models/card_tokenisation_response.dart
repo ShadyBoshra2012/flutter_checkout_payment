@@ -1,3 +1,5 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
+
 part of 'package:flutter_checkout_payment/flutter_checkout_payment.dart';
 
 class CardTokenisationResponse {
@@ -61,5 +63,27 @@ class CardTokenisationResponse {
   factory CardTokenisationResponse.fromString(String str) {
     Map<String, dynamic> data = json.decode(str);
     return CardTokenisationResponse.fromJSON(data);
+  }
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'type': type,
+      'token': token,
+      'expiresOn': expiresOn,
+      'expiryMonth': expiryMonth,
+      'expiryYear': expiryYear,
+      'scheme': scheme,
+      'last4': last4,
+      'bin': bin,
+      'cardType': cardType,
+      'cardCategory': cardCategory,
+      'issuer': issuer,
+      'issuerCountry': issuerCountry,
+      'productId': productId,
+      'productType': productType,
+      'billingAddress': billingAddress?.toMap(),
+      'phone': phone?.toMap(),
+      'name': name,
+    };
   }
 }
