@@ -46,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> initPaymentSDK() async {
     // Platform messages may fail, so we use a try/catch PlatformException.
     try {
-      bool isSuccess =
+      bool? isSuccess =
           await FlutterCheckoutPayment.init(key: "${Keys.TEST_KEY}");
       //bool isSuccess =  await FlutterCheckoutPayment.init(key: "${Keys.TEST_KEY}", environment: Environment.LIVE);
       print(isSuccess);
@@ -172,7 +172,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       print("$cardNumber, $cardNameHolder, $expiryMonth, $expiryYear, $cvv");
 
-      CardTokenisationResponse response =
+      CardTokenisationResponse? response =
           await FlutterCheckoutPayment.generateToken(
               number: number,
               name: cardNameHolder,
@@ -189,7 +189,7 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (BuildContext context) {
           return AlertDialog(
             title: Text("Token"),
-            content: Text("${response.token}"),
+            content: Text("${response?.token ?? 'No token found'}"),
             actions: <Widget>[
               TextButton(
                 child: Text("Close"),
@@ -246,7 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       print("$cardNumber, $cardNameHolder, $expiryMonth, $expiryYear, $cvv");
 
-      CardTokenisationResponse response =
+      CardTokenisationResponse? response =
           await FlutterCheckoutPayment.generateToken(
         number: number,
         name: cardNameHolder,
@@ -276,7 +276,7 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (BuildContext context) {
           return AlertDialog(
             title: Text("Token"),
-            content: Text("${response.token}"),
+            content: Text("${response?.token ?? 'No token found'}"),
             actions: <Widget>[
               TextButton(
                 child: Text("Close"),
@@ -325,7 +325,7 @@ class _HomeScreenState extends State<HomeScreen> {
         },
       );
 
-      String response = await FlutterCheckoutPayment.handle3DS(
+      String? response = await FlutterCheckoutPayment.handle3DS(
         authUrl: 'https://sandbox.checkout.com/api2/v2/3ds/acs/687805',
         successUrl: 'https://example.com/success',
         failUrl: 'https://example.com/fail',
@@ -395,7 +395,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       print("$cardNumber");
 
-      bool isValid = await FlutterCheckoutPayment.isCardValid(number: number);
+      bool? isValid = await FlutterCheckoutPayment.isCardValid(number: number);
 
       // Hide loading dialog
       Navigator.pop(context);
