@@ -1,3 +1,6 @@
+## 1.4.0
+Fix some issues
+
 ## 1.3.0
 Upgrade Checkout SDK to v4.
 Add `generateApplePayToken` and `generateGooglePayToken` methods.

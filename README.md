@@ -15,7 +15,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  flutter_checkout_payment: ^1.3.0
+  flutter_checkout_payment: ^1.4.0
 ```
 
 ### Android
@@ -117,6 +117,7 @@ class CardTokenisationResponse {
 
 [edwardmp](https://github.com/edwardmp): Added Feature Handling 3D Secure.
 [edwardmp](https://github.com/edwardmp): Added `generateApplePayToken` and `generateGooglePayToken` methods.
+[osama450](https://github.com/osama450): Fixed some issues.
 
 
 ## Links
