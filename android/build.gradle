@@ -24,7 +24,9 @@ rootProject.allprojects {
 apply plugin: 'com.android.library'
 
 android {
-    namespace "com.shadyboshra2012.flutter_checkout_payment"
+    if (project.android.hasProperty("namespace")) {
+        namespace "com.shadyboshra2012.flutter_checkout_payment"
+    }
     
     compileSdkVersion 29
 
