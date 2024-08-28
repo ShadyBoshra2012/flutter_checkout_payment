@@ -24,10 +24,15 @@ rootProject.allprojects {
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 29
+    if (project.android.hasProperty("namespace")) {
+        namespace "com.shadyboshra2012.flutter_checkout_payment"
+    }
+    
+    compileSdkVersion 31
 
     defaultConfig {
-        minSdkVersion 16
+        minSdkVersion 31
+        targetSdkVersion 34
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     lintOptions {
