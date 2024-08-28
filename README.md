@@ -118,6 +118,7 @@ class CardTokenisationResponse {
 [edwardmp](https://github.com/edwardmp): Added Feature Handling 3D Secure.
 [edwardmp](https://github.com/edwardmp): Added `generateApplePayToken` and `generateGooglePayToken` methods.
 [osama450](https://github.com/osama450): Fixed some issues.
+[lucasuracosta](https://github.com/lucasuracosta) Fixed issue in Android namespace
 
 
 ## Links

@@ -1,3 +1,6 @@
+## 1.4.1
+Fix Android namespace
+
 ## 1.4.0
 Fix some issues
 
