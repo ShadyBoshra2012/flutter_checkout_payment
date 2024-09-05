@@ -28,10 +28,10 @@ android {
         namespace "com.shadyboshra2012.flutter_checkout_payment"
     }
     
-    compileSdkVersion 31
+    compileSdkVersion 34
 
     defaultConfig {
-        minSdkVersion 31
+        minSdkVersion 23
         targetSdkVersion 34
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

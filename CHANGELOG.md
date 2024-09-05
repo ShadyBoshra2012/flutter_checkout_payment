@@ -1,3 +1,6 @@
+## 1.4.2
+Set Android minSdkVersion to 23
+
 ## 1.4.1
 Fix Android namespace
 
