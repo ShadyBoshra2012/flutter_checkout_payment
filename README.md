@@ -1,3 +1,4 @@
+
 # Flutter Checkout Payment  
 
 [![pub.dev](https://img.shields.io/pub/v/flutter_checkout_payment.svg)](https://pub.dev/packages/flutter_checkout_payment)  [![Donate Paypal](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/ShadyBoshra2012) [![GitHub Follow](https://img.shields.io/github/followers/ShadyBoshra2012.svg?style=social&label=Follow)](https://github.com/ShadyBoshra2012)
@@ -58,6 +59,14 @@ CardTokenisationResponse response = await FlutterCheckoutPayment.generateToken(n
 print(response.token);
 ```
 
+## Apple Pay
+If you are using the official flutter [pay package](https://pub.dev/packages/pay) to handle apple pay, you must send your apple token as the following:
+
+    final paymentDataBase64 = jsonDecode(applePayPaymentData['token']);
+    String jsonString = jsonEncode(paymentDataBase64);
+    List<int> bytes = utf8.encode(jsonString);
+    String base64String = base64Encode(bytes);
+    final token = await FlutterCheckoutPayment.generateApplePayToken(paymentDataBase64: base64String);
 
 ## Public Static Methods Summary
 
