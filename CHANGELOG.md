@@ -1,3 +1,6 @@
+## 1.4.3
+Update README.md
+
 ## 1.4.2
 Set Android minSdkVersion to 23
 
