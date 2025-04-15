@@ -1,3 +1,6 @@
+## 1.4.4
+Remove Flutter v1 embedding to fix Android compilation
+
 ## 1.4.3
 Update README.md
 

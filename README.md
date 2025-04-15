@@ -16,7 +16,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  flutter_checkout_payment: ^1.4.0
+  flutter_checkout_payment: ^1.4.4
 ```
 
 ### Android
@@ -128,6 +128,7 @@ class CardTokenisationResponse {
 [edwardmp](https://github.com/edwardmp): Added `generateApplePayToken` and `generateGooglePayToken` methods.
 [osama450](https://github.com/osama450): Fixed some issues.
 [lucasuracosta](https://github.com/lucasuracosta) Fixed issue in Android namespace
+[valentindrolet-naomi](https://github.com/valentindrolet-naomi) Remove Flutter v1 embedding to fix Android compilation
 
 
 ## Links
